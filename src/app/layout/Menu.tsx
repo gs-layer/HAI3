@@ -9,10 +9,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   useAppSelector,
   useHAI3,
+  useActivePackage,
   eventBus,
   HAI3_ACTION_MOUNT_EXT,
   HAI3_SCREEN_DOMAIN,
   type MenuState,
+  type Extension,
   type ScreenExtension,
 } from '@hai3/react';
 import {
@@ -36,10 +38,11 @@ export const Menu: React.FC<MenuProps> = ({ children }) => {
   const menuState = useAppSelector((state) => state['layout/menu'] as MenuState | undefined);
   const app = useHAI3();
   const { screensetsRegistry } = app;
+  const activePackage = useActivePackage();
 
   const collapsed = menuState?.collapsed ?? false;
 
-  // Extension-driven menu state
+  // Extension-driven menu state — filtered by active GTS package
   const [extensions, setExtensions] = useState<ScreenExtension[]>([]);
   const [mountedId, setMountedId] = useState<string | undefined>();
 
@@ -47,10 +50,17 @@ export const Menu: React.FC<MenuProps> = ({ children }) => {
     if (!screensetsRegistry) return;
 
     const refresh = () => {
-      const exts = screensetsRegistry.getExtensionsForDomain(HAI3_SCREEN_DOMAIN);
-      // Screen extensions are guaranteed to be ScreenExtension type (enforced by extensionsTypeId)
-      // Cast to ScreenExtension since screen domain requires the derived type with presentation
-      const screenExts = exts as ScreenExtension[];
+      let screenExts: ScreenExtension[];
+      if (activePackage) {
+        // Filter extensions by the active GTS package, then by screen domain
+        const packageExts = screensetsRegistry.getExtensionsForPackage(activePackage);
+        screenExts = packageExts.filter(
+          (ext: Extension) => ext.domain === HAI3_SCREEN_DOMAIN && 'presentation' in ext
+        ) as ScreenExtension[];
+      } else {
+        // Fallback: show all screen extensions when no package is active yet
+        screenExts = screensetsRegistry.getExtensionsForDomain(HAI3_SCREEN_DOMAIN) as ScreenExtension[];
+      }
       const sorted = screenExts
         .sort((a, b) => (a.presentation.order ?? 999) - (b.presentation.order ?? 999));
       setExtensions(sorted);
@@ -60,7 +70,7 @@ export const Menu: React.FC<MenuProps> = ({ children }) => {
     refresh();
     const interval = setInterval(refresh, 500);
     return () => clearInterval(interval);
-  }, [screensetsRegistry]);
+  }, [screensetsRegistry, activePackage]);
 
   const handleToggleCollapse = () => {
     eventBus.emit('layout/menu/collapsed', { collapsed: !collapsed });
