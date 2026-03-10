@@ -86,7 +86,8 @@ Requirements that significantly influence architecture decisions.
 | `cpt-hai3-fr-sse-protocol` | `@hai3/api` abstracts REST and SSE behind `createApiService()` with protocol-specific adapters |
 | `cpt-hai3-fr-i18n-lazy-chunks` | Namespace-based lazy loading: translation chunks loaded on demand per screen-set |
 | `cpt-hai3-fr-externalize-transform` | Vite plugin externalizes `@hai3/*` imports in MFE builds; host provides shared scope at runtime |
-| `cpt-hai3-fr-undoc-mfe-plugin` | `microfrontends()` plugin integrates MFE lifecycle, theme propagation, and i18n into framework |
+| `cpt-hai3-fr-mfe-plugin` | `microfrontends()` plugin integrates MFE lifecycle, theme propagation, i18n, and shared property bridging into framework |
+| `cpt-hai3-fr-mock-toggle` | `mock()` plugin with `toggleMockMode` action enabling runtime switch between real and mock API responses |
 
 #### NFR Allocation
 

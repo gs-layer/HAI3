@@ -867,55 +867,26 @@ When a PR merged to `main` contains version changes, CI MUST automatically publi
 **Rationale**: Automated release pipeline with safety checks.
 **Actors**: `cpt-hai3-actor-ci-cd`
 
-### 5.19 Routing (NOT_IMPLEMENTED)
-
-> **Note**: The following requirements from `openspec/specs/routing/spec.md` describe a legacy RouteRegistry system that has been fully replaced by MFE extension architecture. All are marked as not implemented.
-
-#### Custom Route Paths
-
-- [ ] `p1` - **ID**: `cpt-hai3-fr-routing-custom-paths`
-
-Menu items MUST support an optional `path` property for custom URL patterns with named parameters.
-
-**Rationale**: Parameterized URL routing for deep linking. Not implemented — OpenSpec spec aspirational.
-**Actors**: `cpt-hai3-actor-developer`
-
-#### Route Matching
-
-- [ ] `p1` - **ID**: `cpt-hai3-fr-routing-route-matching`
-
-RouteRegistry MUST provide `matchRoute()` for URL pattern matching with parameter extraction.
-
-**Rationale**: URL-based navigation. Not implemented — OpenSpec spec aspirational.
-**Actors**: `cpt-hai3-actor-runtime`
-
-#### Route Params Context
-
-- [ ] `p2` - **ID**: `cpt-hai3-fr-routing-params-context`
-
-Screen components SHOULD access route parameters via `useRouteParams()` hook.
-
-**Rationale**: Screen-level access to URL parameters. Not implemented — OpenSpec spec aspirational.
-**Actors**: `cpt-hai3-actor-developer`
-
-### 5.20 Undiscovered Code (UNDOCUMENTED)
+### 5.19 Mock Mode
 
 #### Mock Mode Toggle
 
-- [ ] `p2` - **ID**: `cpt-hai3-fr-undoc-mock-toggle`
+- [ ] `p2` - **ID**: `cpt-hai3-fr-mock-toggle`
 
-The system MUST provide a `toggleMockMode` action via `mock()` plugin that activates/deactivates all registered mock plugins across all API services.
+The system MUST provide a `toggleMockMode` action via `mock()` plugin that activates/deactivates all registered mock plugins across all API services. Studio's API mode toggle MUST use this action.
 
-**Rationale**: Discovered during migration — centralized mock mode control. No OpenSpec coverage.
+**Rationale**: Centralized mock mode control enables developers and studio users to switch between real and mock API responses without restarting the application.
 **Actors**: `cpt-hai3-actor-developer`, `cpt-hai3-actor-studio-user`
 
-#### Microfrontends Plugin
+### 5.20 Microfrontend Plugin
 
-- [ ] `p1` - **ID**: `cpt-hai3-fr-undoc-mfe-plugin`
+#### MFE Lifecycle Plugin
 
-The system MUST provide a `microfrontends()` plugin with actions (`loadExtension`, `mountExtension`, `unmountExtension`, `registerExtension`, `unregisterExtension`) and domain constants (`HAI3_SCREEN_DOMAIN`, `HAI3_SIDEBAR_DOMAIN`, `HAI3_POPUP_DOMAIN`, `HAI3_OVERLAY_DOMAIN`).
+- [ ] `p1` - **ID**: `cpt-hai3-fr-mfe-plugin`
 
-**Rationale**: Discovered during migration — core MFE orchestration plugin. No OpenSpec coverage for plugin integration layer.
+The system MUST provide a `microfrontends()` framework plugin with actions (`loadExtension`, `mountExtension`, `unmountExtension`, `registerExtension`, `unregisterExtension`) and domain constants (`HAI3_SCREEN_DOMAIN`, `HAI3_SIDEBAR_DOMAIN`, `HAI3_POPUP_DOMAIN`, `HAI3_OVERLAY_DOMAIN`). The plugin MUST orchestrate MFE loading via blob URL isolation, propagate theme and i18n changes to mounted extensions, and bridge shared properties between host and MFE.
+
+**Rationale**: Core orchestration plugin that integrates MFE lifecycle management, theme/i18n propagation, and shared property bridging into the framework's plugin chain.
 **Actors**: `cpt-hai3-actor-host-app`, `cpt-hai3-actor-framework-plugin`
 
 ## 6. Non-Functional Requirements
