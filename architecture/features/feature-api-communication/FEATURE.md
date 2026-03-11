@@ -1,24 +1,63 @@
 # Feature: API Communication
 
+
+<!-- toc -->
+
+- [1. Feature Context](#1-feature-context)
+  - [1.1 Overview](#11-overview)
+  - [1.2 Purpose](#12-purpose)
+  - [1.3 Actors](#13-actors)
+  - [1.4 References](#14-references)
+- [2. Actor Flows (CDSL)](#2-actor-flows-cdsl)
+  - [Flow 1 — Developer Defines and Registers a Domain Service](#flow-1-developer-defines-and-registers-a-domain-service)
+  - [Flow 2 — REST Request with Plugin Chain Execution](#flow-2-rest-request-with-plugin-chain-execution)
+  - [Flow 3 — SSE Connection Lifecycle](#flow-3-sse-connection-lifecycle)
+  - [Flow 4 — SSE Disconnection](#flow-4-sse-disconnection)
+  - [Flow 5 — Mock Plugin Registration and Activation by Framework](#flow-5-mock-plugin-registration-and-activation-by-framework)
+  - [Flow 6 — Global Plugin Registration via apiRegistry.plugins](#flow-6-global-plugin-registration-via-apiregistryplugins)
+  - [Flow 7 — Service-Level Plugin Exclusion](#flow-7-service-level-plugin-exclusion)
+  - [Flow 8 — Service Cleanup](#flow-8-service-cleanup)
+- [3. Processes / Business Logic (CDSL)](#3-processes-business-logic-cdsl)
+  - [Algorithm 1 — REST Plugin Chain Execution (onRequest)](#algorithm-1-rest-plugin-chain-execution-onrequest)
+  - [Algorithm 2 — REST Plugin Chain Execution (onResponse / onError)](#algorithm-2-rest-plugin-chain-execution-onresponse-onerror)
+  - [Algorithm 3 — SSE Plugin Chain Execution (onConnect)](#algorithm-3-sse-plugin-chain-execution-onconnect)
+  - [Algorithm 4 — Mock Factory Matching (RestMockPlugin)](#algorithm-4-mock-factory-matching-restmockplugin)
+  - [Algorithm 5 — Mock Stream Matching (SseMockPlugin)](#algorithm-5-mock-stream-matching-ssemockplugin)
+  - [Algorithm 6 — MockEventSource Event Emission](#algorithm-6-mockeventsource-event-emission)
+  - [Algorithm 7 — isMockPlugin Type Guard](#algorithm-7-ismockplugin-type-guard)
+  - [Algorithm 8 — Protocol Plugin Ordering](#algorithm-8-protocol-plugin-ordering)
+- [4. States (CDSL)](#4-states-cdsl)
+  - [State 1 — REST Connection State](#state-1-rest-connection-state)
+  - [State 2 — SSE Connection State](#state-2-sse-connection-state)
+  - [State 3 — MockEventSource Lifecycle](#state-3-mockeventsource-lifecycle)
+  - [State 4 — Mock Mode Toggle State](#state-4-mock-mode-toggle-state)
+- [5. Definitions of Done](#5-definitions-of-done)
+  - [DoD 1 — BaseApiService and Protocol Registry](#dod-1-baseapiservice-and-protocol-registry)
+  - [DoD 2 — RestProtocol](#dod-2-restprotocol)
+  - [DoD 3 — SseProtocol](#dod-3-sseprotocol)
+  - [DoD 4 — RestMockPlugin](#dod-4-restmockplugin)
+  - [DoD 5 — SseMockPlugin and MockEventSource](#dod-5-ssemockplugin-and-mockeventsource)
+  - [DoD 6 — ApiRegistry](#dod-6-apiregistry)
+  - [DoD 7 — Plugin Type System and Type Guards](#dod-7-plugin-type-system-and-type-guards)
+  - [DoD 8 — Package Public API Surface](#dod-8-package-public-api-surface)
+- [6. Acceptance Criteria](#6-acceptance-criteria)
+- [Additional Context](#additional-context)
+  - [Plugin Execution Order Convention](#plugin-execution-order-convention)
+  - [Full URL vs Relative URL Split](#full-url-vs-relative-url-split)
+  - [MOCK_PLUGIN Symbol Identity](#mockplugin-symbol-identity)
+  - [No Mock State in @hai3/api](#no-mock-state-in-hai3api)
+  - [MockEventSource Abort Safety](#mockeventsource-abort-safety)
+
+<!-- /toc -->
+
 - [x] `p1` - **ID**: `cpt-hai3-featstatus-api-communication`
 
-- [x] `p1` - **ID**: `cpt-hai3-feature-api-communication`
-
-## Table of Contents
-
-1. [Feature Context](#feature-context)
-2. [Actor Flows](#actor-flows)
-3. [Processes / Business Logic](#processes--business-logic)
-4. [States](#states)
-5. [Definitions of Done](#definitions-of-done)
-6. [Acceptance Criteria](#acceptance-criteria)
-7. [Additional Context](#additional-context)
-
+- [x] `p2` - `cpt-hai3-feature-api-communication`
 ---
 
-## Feature Context
+## 1. Feature Context
 
-### 1. Overview
+### 1.1 Overview
 
 Provides the unified API service layer for the HAI3 system. Abstracts REST and SSE transport protocols behind a consistent interface that isolates domain code from wire-level concerns. Consumers extend `BaseApiService`, register protocol instances, and add plugins without touching protocol internals.
 
@@ -28,13 +67,13 @@ Primary value: A single, extensible SDK package that any domain plugin can use t
 
 Key assumptions: Consumers run in a browser environment that provides `EventSource`. Axios is the sole external peer dependency. Mock mode is controlled by the framework layer, not by service code.
 
-### 2. Purpose
+### 1.2 Purpose
 
 Enable developers to define domain API services in a protocol-agnostic way, wire cross-cutting plugins (auth, logging, mocking, retry) at both global and service-instance levels, and switch between real and mock transports at runtime through a centralized toggle — all with zero coupling to other `@hai3/*` packages.
 
 Success criteria: A developer can scaffold a new domain service, register it, add a mock plugin, and toggle mock mode without modifying any protocol or registry internals.
 
-### 3. Actors
+### 1.3 Actors
 
 - `cpt-hai3-actor-developer`
 - `cpt-hai3-actor-screenset-author`
@@ -44,7 +83,7 @@ Success criteria: A developer can scaffold a new domain service, register it, ad
 - `cpt-hai3-actor-runtime`
 - `cpt-hai3-actor-framework-plugin`
 
-### 4. References
+### 1.4 References
 
 - Overall Design: [DESIGN.md](../../DESIGN.md)
 - Decomposition: [DECOMPOSITION.md](../../DECOMPOSITION.md) — section 2.4
@@ -54,7 +93,7 @@ Success criteria: A developer can scaffold a new domain service, register it, ad
 
 ---
 
-## Actor Flows
+## 2. Actor Flows (CDSL)
 
 ### Flow 1 — Developer Defines and Registers a Domain Service
 
@@ -184,7 +223,7 @@ Success criteria: A developer can scaffold a new domain service, register it, ad
 
 ---
 
-## Processes / Business Logic
+## 3. Processes / Business Logic (CDSL)
 
 ### Algorithm 1 — REST Plugin Chain Execution (onRequest)
 
@@ -303,7 +342,7 @@ This algorithm governs how both `RestProtocol` and `SseProtocol` build their exe
 
 ---
 
-## States
+## 4. States (CDSL)
 
 ### State 1 — REST Connection State
 
@@ -358,7 +397,7 @@ Global mock mode state managed by the framework layer, not within `@hai3/api` it
 
 ---
 
-## Definitions of Done
+## 5. Definitions of Done
 
 ### DoD 1 — BaseApiService and Protocol Registry
 
@@ -628,7 +667,7 @@ The `@hai3/api` package exposes a complete, tree-shakeable public surface throug
 
 ---
 
-## Acceptance Criteria
+## 6. Acceptance Criteria
 
 - [x] `BaseApiService` constructor registers protocols by constructor name and passes the excluded-classes callback; calling an unregistered protocol throws a typed error
 - [x] `RestProtocol` executes `onRequest` plugins in FIFO order; the first short-circuit response stops the chain and skips the Axios call

@@ -1,24 +1,62 @@
 # Feature: Framework Composition
 
+
+<!-- toc -->
+
+- [1. Feature Context](#1-feature-context)
+  - [1.1 Overview](#11-overview)
+  - [1.2 Purpose](#12-purpose)
+  - [1.3 Actors](#13-actors)
+  - [1.4 References](#14-references)
+- [2. Actor Flows (CDSL)](#2-actor-flows-cdsl)
+  - [Application Bootstrap](#application-bootstrap)
+  - [Plugin Registration with Dependency Enforcement](#plugin-registration-with-dependency-enforcement)
+  - [Convenience Full-Preset Bootstrap](#convenience-full-preset-bootstrap)
+  - [Theme Change and MFE Propagation](#theme-change-and-mfe-propagation)
+  - [Language Change and MFE Propagation](#language-change-and-mfe-propagation)
+  - [MFE Extension Registration](#mfe-extension-registration)
+  - [MFE Extension Lifecycle (Load / Mount / Unmount)](#mfe-extension-lifecycle-load-mount-unmount)
+  - [Shared Property Broadcast](#shared-property-broadcast)
+  - [App Configuration via Events](#app-configuration-via-events)
+  - [Application Teardown](#application-teardown)
+- [3. Processes / Business Logic (CDSL)](#3-processes-business-logic-cdsl)
+  - [Builder Dependency Resolution (Topological Sort)](#builder-dependency-resolution-topological-sort)
+  - [Plugin Provides Aggregation](#plugin-provides-aggregation)
+  - [GTS Shared Property Validation](#gts-shared-property-validation)
+  - [Base Path Resolution](#base-path-resolution)
+  - [Mock Mode Toggle](#mock-mode-toggle)
+- [4. States (CDSL)](#4-states-cdsl)
+  - [MFE Extension Registration State](#mfe-extension-registration-state)
+  - [MFE Domain Mount State](#mfe-domain-mount-state)
+  - [Plugin Builder State](#plugin-builder-state)
+  - [Tenant State](#tenant-state)
+- [5. Definitions of Done](#5-definitions-of-done)
+  - [Builder API and Plugin System](#builder-api-and-plugin-system)
+  - [Layout Orchestration](#layout-orchestration)
+  - [App Configuration and Event-Driven API](#app-configuration-and-event-driven-api)
+  - [Theme and Language Propagation to MFEs](#theme-and-language-propagation-to-mfes)
+  - [Microfrontends Plugin and MFE Lifecycle](#microfrontends-plugin-and-mfe-lifecycle)
+  - [Shared Property Broadcast with GTS Validation](#shared-property-broadcast-with-gts-validation)
+  - [Presets](#presets)
+  - [SDK Re-exports and Convenience Surface](#sdk-re-exports-and-convenience-surface)
+- [6. Acceptance Criteria](#6-acceptance-criteria)
+- [Additional Context](#additional-context)
+  - [Plugin Lifecycle Sequence](#plugin-lifecycle-sequence)
+  - [MFE Effects Initialization Exception](#mfe-effects-initialization-exception)
+  - [Shared Property Late Registration Limitation](#shared-property-late-registration-limitation)
+  - [No `updateDomainProperty` / `updateDomainProperties`](#no-updatedomainproperty-updatedomainproperties)
+  - [HAI3Config Fields](#hai3config-fields)
+
+<!-- /toc -->
+
 - [x] `p1` - **ID**: `cpt-hai3-featstatus-framework-composition`
 
-- [x] `p1` - **ID**: `cpt-hai3-feature-framework-composition`
-
-## Table of Contents
-
-1. [Feature Context](#feature-context)
-2. [Actor Flows](#actor-flows)
-3. [Processes / Business Logic](#processes-business-logic)
-4. [States](#states)
-5. [Definitions of Done](#definitions-of-done)
-6. [Acceptance Criteria](#acceptance-criteria)
-7. [Additional Context](#additional-context)
-
+- [x] `p2` - `cpt-hai3-feature-framework-composition`
 ---
 
-## Feature Context
+## 1. Feature Context
 
-### 1. Overview
+### 1.1 Overview
 
 Framework Composition is the L2 layer that stitches together the four L1 SDK packages (`@hai3/state`, `@hai3/screensets`, `@hai3/api`, `@hai3/i18n`) into a cohesive, production-ready application framework. It does this through a plugin architecture centered on the `createHAI3()` builder: the host application chains `.use(plugin)` calls and calls `.build()` to produce an assembled `HAI3App` instance that owns a Redux store, theme registry, i18n registry, API registry, MFE-enabled screensets registry, and a complete set of typed actions.
 
@@ -31,13 +69,13 @@ Framework Composition is the L2 layer that stitches together the four L1 SDK pac
 - Each plugin declares name and optional dependencies; the builder performs topological ordering.
 - The framework has no React dependency — all React integration lives in `@hai3/react` (L3).
 
-### 2. Purpose
+### 1.2 Purpose
 
 Enable host applications to compose a fully-wired HAI3 framework instance by assembling plugins via a fluent builder API, with theme/language propagation to MFEs, GTS-validated shared property broadcast, layout state management, and base-path-aware navigation configuration — all without modifying framework source code.
 
 **Success criteria**: A host application initializes a complete HAI3 framework instance with one function call; plugins register slices and effects without order dependency; theme and language changes propagate to all registered MFE domains within the same synchronous call chain.
 
-### 3. Actors
+### 1.3 Actors
 
 - `cpt-hai3-actor-host-app`
 - `cpt-hai3-actor-framework-plugin`
@@ -46,7 +84,7 @@ Enable host applications to compose a fully-wired HAI3 framework instance by ass
 - `cpt-hai3-actor-microfrontend`
 - `cpt-hai3-actor-gts-plugin`
 
-### 4. References
+### 1.4 References
 
 - Overall Design: [DESIGN.md](../../DESIGN.md)
 - Decomposition: [DECOMPOSITION.md](../../DECOMPOSITION.md) — entry 2.6
@@ -59,7 +97,7 @@ Enable host applications to compose a fully-wired HAI3 framework instance by ass
 
 ---
 
-## Actor Flows
+## 2. Actor Flows (CDSL)
 
 ### Application Bootstrap
 
@@ -193,7 +231,7 @@ Enable host applications to compose a fully-wired HAI3 framework instance by ass
 
 ---
 
-## Processes / Business Logic
+## 3. Processes / Business Logic (CDSL)
 
 ### Builder Dependency Resolution (Topological Sort)
 
@@ -256,7 +294,7 @@ Enable host applications to compose a fully-wired HAI3 framework instance by ass
 
 ---
 
-## States
+## 4. States (CDSL)
 
 ### MFE Extension Registration State
 
@@ -301,7 +339,7 @@ Tracked in `state.tenant`.
 
 ---
 
-## Definitions of Done
+## 5. Definitions of Done
 
 ### Builder API and Plugin System
 
@@ -507,7 +545,7 @@ The framework does NOT export `createAction` to consumers; actions are handwritt
 
 ---
 
-## Acceptance Criteria
+## 6. Acceptance Criteria
 
 - [x] `createHAI3().use(pluginA()).use(pluginB()).build()` produces a `HAI3App` with `store`, `themeRegistry`, `i18nRegistry`, `apiRegistry`, `screensetsRegistry`, and `actions` all populated
 - [x] Plugin dependency ordering is enforced: if `pluginB` declares `dependencies: ['pluginA']`, `pluginA.onInit` is always called before `pluginB.onInit` regardless of `.use()` call order

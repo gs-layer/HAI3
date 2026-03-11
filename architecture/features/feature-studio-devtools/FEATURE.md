@@ -2,23 +2,62 @@
 
 - [x] `p1` - **ID**: `cpt-hai3-featstatus-studio-devtools`
 
+<!-- toc -->
+
+- [1. Feature Context](#1-feature-context)
+  - [1.1 Overview](#11-overview)
+  - [1.2 Purpose](#12-purpose)
+  - [1.3 Actors](#13-actors)
+  - [1.4 References](#14-references)
+- [2. Actor Flows (CDSL)](#2-actor-flows-cdsl)
+  - [Panel Toggle and Keyboard Access](#panel-toggle-and-keyboard-access)
+  - [Panel Drag and Reposition](#panel-drag-and-reposition)
+  - [CollapsedButton Drag with Click Distinction](#collapsedbutton-drag-with-click-distinction)
+  - [Panel Resize](#panel-resize)
+  - [Theme Change](#theme-change)
+  - [Language Change](#language-change)
+  - [API Mock Mode Toggle](#api-mock-mode-toggle)
+  - [GTS Package Selection](#gts-package-selection)
+  - [Settings Restore on Mount](#settings-restore-on-mount)
+  - [Viewport Position Clamping](#viewport-position-clamping)
+  - [Conditional Loading and Production Exclusion](#conditional-loading-and-production-exclusion)
+- [3. Processes / Business Logic (CDSL)](#3-processes-business-logic-cdsl)
+  - [Position Clamping Algorithm](#position-clamping-algorithm)
+  - [Default Position Derivation](#default-position-derivation)
+  - [Persistence Initialization](#persistence-initialization)
+  - [localStorage Read/Write with Error Guard](#localstorage-readwrite-with-error-guard)
+  - [GTS Package Restore Validation](#gts-package-restore-validation)
+  - [Event Routing for Dual Draggable Elements](#event-routing-for-dual-draggable-elements)
+  - [Dropdown Portal Management](#dropdown-portal-management)
+- [4. States (CDSL)](#4-states-cdsl)
+  - [Panel Visibility State Machine](#panel-visibility-state-machine)
+  - [Drag State Machine](#drag-state-machine)
+  - [Resize State Machine](#resize-state-machine)
+- [5. Definitions of Done](#5-definitions-of-done)
+  - [DoD: Floating Panel and Glassmorphic Overlay](#dod-floating-panel-and-glassmorphic-overlay)
+  - [DoD: Control Panel Sections](#dod-control-panel-sections)
+  - [DoD: Settings Persistence and Restore](#dod-settings-persistence-and-restore)
+  - [DoD: Viewport Position Clamping](#dod-viewport-position-clamping)
+  - [DoD: Keyboard Shortcut and Focus](#dod-keyboard-shortcut-and-focus)
+  - [DoD: Conditional Loading and Zero Production Footprint](#dod-conditional-loading-and-zero-production-footprint)
+- [6. Acceptance Criteria](#6-acceptance-criteria)
+- [Additional Context](#additional-context)
+  - [Storage Key Namespace](#storage-key-namespace)
+  - [Studio Event Namespace](#studio-event-namespace)
+  - [UIKit Component Organization](#uikit-component-organization)
+  - [Panel Constraints](#panel-constraints)
+  - [Dependency Boundary](#dependency-boundary)
+  - [i18n Self-Registration](#i18n-self-registration)
+
+<!-- /toc -->
+
 - [x] `p2` - `cpt-hai3-feature-studio-devtools`
-
-## Table of Contents
-
-1. [Feature Context](#feature-context)
-2. [Actor Flows](#actor-flows)
-3. [Processes / Business Logic](#processes--business-logic)
-4. [States](#states)
-5. [Definitions of Done](#definitions-of-done)
-6. [Acceptance Criteria](#acceptance-criteria)
-7. [Additional Context](#additional-context)
 
 ---
 
-## Feature Context
+## 1. Feature Context
 
-### 1. Overview
+### 1.1 Overview
 
 Studio DevTools is the development-time overlay package (`@hai3/studio`) for HAI3 applications. It provides a floating glassmorphic panel that developers can use to switch themes, languages, GTS packages, and API mock mode without leaving the running application.
 
@@ -28,20 +67,20 @@ Primary value: A single persistent panel accessible via keyboard shortcut gives 
 
 Key assumptions: Studio is only mounted when `import.meta.env.DEV` is true. All state changes flow through the existing framework event bus — Studio does not bypass the standard Action → Event → Effect → Reducer flow. No framework or application code is modified to support Studio; all logic lives inside `@hai3/studio`.
 
-### 2. Purpose
+### 1.2 Purpose
 
 Enable the Studio User to inspect and manipulate runtime configuration (theme, language, mock API state, active GTS package) through a draggable, resizable, collapsible overlay panel during development, with settings persisted to localStorage for session continuity.
 
 Success criteria: A developer can toggle theme, language, and API mock mode in under two seconds from anywhere in the application, and the settings survive a page reload.
 
-### 3. Actors
+### 1.3 Actors
 
 - `cpt-hai3-actor-studio-user` — Developer using the floating panel to adjust runtime configuration
 - `cpt-hai3-actor-build-system` — Vite build process that tree-shakes Studio from production bundles
 - `cpt-hai3-actor-runtime` — Browser that evaluates conditional imports, manages localStorage, and fires resize events
 - `cpt-hai3-actor-framework-plugin` — Framework plugins (`themes()`, `i18n()`, `mock()`) that respond to events Studio emits during settings restore
 
-### 4. References
+### 1.4 References
 
 - Overall Design: [DESIGN.md](../../DESIGN.md) — `cpt-hai3-component-studio`
 - Decomposition: [DECOMPOSITION.md](../../DECOMPOSITION.md) — `cpt-hai3-feature-studio-devtools` (section 2.9)
@@ -52,7 +91,7 @@ Success criteria: A developer can toggle theme, language, and API mock mode in u
 
 ---
 
-## Actor Flows
+## 2. Actor Flows (CDSL)
 
 ### Panel Toggle and Keyboard Access
 
@@ -249,7 +288,7 @@ Success criteria: A developer can toggle theme, language, and API mock mode in u
 
 ---
 
-## Processes / Business Logic
+## 3. Processes / Business Logic (CDSL)
 
 ### Position Clamping Algorithm
 
@@ -352,7 +391,7 @@ Prevents dropdowns from being clipped by the glassmorphic panel's `backdrop-filt
 
 ---
 
-## States
+## 4. States (CDSL)
 
 ### Panel Visibility State Machine
 
@@ -392,7 +431,7 @@ Applies independently to both `StudioPanel` and `CollapsedButton` draggables:
 
 ---
 
-## Definitions of Done
+## 5. Definitions of Done
 
 ### DoD: Floating Panel and Glassmorphic Overlay
 
@@ -564,7 +603,7 @@ Studio panel toggling is accessible via `Shift+\`` keyboard shortcut using `e.co
 
 ---
 
-## Acceptance Criteria
+## 6. Acceptance Criteria
 
 - [x] Studio panel renders as a fixed glassmorphic overlay in development mode and does not appear in production builds
 - [x] Panel can be dragged to any in-viewport position and resized within `[320–600]×[400–800]` px constraints

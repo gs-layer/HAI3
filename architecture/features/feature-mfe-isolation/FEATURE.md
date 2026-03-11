@@ -1,24 +1,50 @@
 # Feature: MFE Blob URL Isolation
 
+
+<!-- toc -->
+
+- [1. Feature Context](#1-feature-context)
+  - [1.1 Overview](#11-overview)
+  - [1.2 Purpose](#12-purpose)
+  - [1.3 Actors](#13-actors)
+  - [1.4 References](#14-references)
+- [2. Actor Flows (CDSL)](#2-actor-flows-cdsl)
+  - [MFE Load via Blob URL Isolation](#mfe-load-via-blob-url-isolation)
+  - [MFE Build with Externalize Plugin](#mfe-build-with-externalize-plugin)
+  - [MFE-Internal Bootstrap](#mfe-internal-bootstrap)
+- [3. Processes / Business Logic (CDSL)](#3-processes-business-logic-cdsl)
+  - [Build Share Scope](#build-share-scope)
+  - [Blob URL Get Closure](#blob-url-get-closure)
+  - [Fetch Source Text (with Cache)](#fetch-source-text-with-cache)
+  - [Recursive Blob URL Chain](#recursive-blob-url-chain)
+  - [Parse Static Import Filenames](#parse-static-import-filenames)
+  - [Rewrite Module Imports](#rewrite-module-imports)
+  - [Parse Expose Chunk Filename](#parse-expose-chunk-filename)
+  - [Write Share Scope to Global](#write-share-scope-to-global)
+  - [hai3-mfe-externalize: Rename Shared Chunks](#hai3-mfe-externalize-rename-shared-chunks)
+  - [hai3-mfe-externalize: Map Bundled Sub-Chunks to Packages](#hai3-mfe-externalize-map-bundled-sub-chunks-to-packages)
+  - [hai3-mfe-externalize: Rewrite Bundled Imports to importShared](#hai3-mfe-externalize-rewrite-bundled-imports-to-importshared)
+- [4. States (CDSL)](#4-states-cdsl)
+  - [LoadBlobState (Per-Load Isolation Map)](#loadblobstate-per-load-isolation-map)
+  - [SourceTextCache (Handler-Level)](#sourcetextcache-handler-level)
+- [5. Definitions of Done](#5-definitions-of-done)
+  - [Blob URL Isolation Core](#blob-url-isolation-core)
+  - [hai3-mfe-externalize Vite Plugin](#hai3-mfe-externalize-vite-plugin)
+  - [MFE-Internal Dataflow](#mfe-internal-dataflow)
+  - [SharedDependencyConfig chunkPath Field](#shareddependencyconfig-chunkpath-field)
+- [6. Acceptance Criteria](#6-acceptance-criteria)
+- [Additional Context](#additional-context)
+
+<!-- /toc -->
+
 - [x] `p1` - **ID**: `cpt-hai3-featstatus-mfe-isolation`
 
-- [x] `p1` - **ID**: `cpt-hai3-feature-mfe-isolation`
-
-## Table of Contents
-
-1. [Feature Context](#feature-context)
-2. [Actor Flows](#actor-flows)
-3. [Processes / Business Logic](#processes-business-logic)
-4. [States](#states)
-5. [Definitions of Done](#definitions-of-done)
-6. [Acceptance Criteria](#acceptance-criteria)
-7. [Additional Context](#additional-context)
-
+- [x] `p2` - `cpt-hai3-feature-mfe-isolation`
 ---
 
-## Feature Context
+## 1. Feature Context
 
-### 1. Overview
+### 1.1 Overview
 
 MFE Blob URL Isolation delivers per-microfrontend JavaScript module isolation by evaluating each MFE bundle in a fresh module scope via the browser's blob URL mechanism. Without this, dynamically loaded MFE bundles share the same module registry as the host application: two MFEs that each depend on `react` would receive the same React instance, meaning their fiber trees, hooks state, and Redux stores bleed into each other.
 
@@ -36,20 +62,20 @@ The MFE-internal dataflow completes the isolation: each MFE creates its own `HAI
 
 **Key assumptions**: The host application runs in a browser with support for `Blob`, `URL.createObjectURL`, and dynamic `import()`. MFE builds use `@originjs/vite-plugin-federation` with the `hai3-mfe-externalize` plugin.
 
-### 2. Purpose
+### 1.2 Purpose
 
 Enable multiple independently deployed MFE bundles to coexist in the same browser page without module state leakage, while minimizing redundant network requests through source text caching.
 
 **Success criteria**: `Object.is(mfeA_React, mfeB_React)` is `false` for any two concurrently loaded MFEs that both declare `react` in their `sharedDependencies`.
 
-### 3. Actors
+### 1.3 Actors
 
 - `cpt-hai3-actor-microfrontend`
 - `cpt-hai3-actor-build-system`
 - `cpt-hai3-actor-host-app`
 - `cpt-hai3-actor-runtime`
 
-### 4. References
+### 1.4 References
 
 - Overall Design: [DESIGN.md](../../DESIGN.md)
 - Decomposition entry: [DECOMPOSITION.md §2.3](../../DECOMPOSITION.md)
@@ -62,7 +88,7 @@ Enable multiple independently deployed MFE bundles to coexist in the same browse
 
 ---
 
-## Actor Flows
+## 2. Actor Flows (CDSL)
 
 ### MFE Load via Blob URL Isolation
 
@@ -122,7 +148,7 @@ Enable multiple independently deployed MFE bundles to coexist in the same browse
 
 ---
 
-## Processes / Business Logic
+## 3. Processes / Business Logic (CDSL)
 
 ### Build Share Scope
 
@@ -268,7 +294,7 @@ Replaces direct imports of bundled sub-chunks in non-infrastructure MFE chunks w
 
 ---
 
-## States
+## 4. States (CDSL)
 
 ### LoadBlobState (Per-Load Isolation Map)
 
@@ -296,7 +322,7 @@ Tracks the fetch state of each chunk URL across all loads for the lifetime of th
 
 ---
 
-## Definitions of Done
+## 5. Definitions of Done
 
 ### Blob URL Isolation Core
 
@@ -405,7 +431,7 @@ Each MFE package bootstraps its own isolated `HAI3App` and exposes it for use by
 
 ---
 
-## Acceptance Criteria
+## 6. Acceptance Criteria
 
 - [x] Two MFEs loaded sequentially with the same `react` `chunkPath` produce React instances where `Object.is(mfeA_React, mfeB_React)` is `false`
 - [x] Two MFEs loaded with the same `chunkPath` result in at most one network fetch for that chunk URL (source text cache deduplication)

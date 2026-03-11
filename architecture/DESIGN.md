@@ -9,13 +9,13 @@
     - [Functional Drivers](#functional-drivers)
     - [NFR Allocation](#nfr-allocation)
   - [1.3 Architecture Layers](#13-architecture-layers)
-- [2. Principles & Constraints](#2-principles--constraints)
+- [2. Principles & Constraints](#2-principles-constraints)
   - [2.1 Design Principles](#21-design-principles)
     - [Event-Driven Architecture](#event-driven-architecture)
     - [Layer Isolation](#layer-isolation)
     - [Plugin-First Composition](#plugin-first-composition)
     - [Self-Registering Registries](#self-registering-registries)
-    - [Action → Event → Effect → Reducer Flux](#action--event--effect--reducer-flux)
+    - [Action → Event → Effect → Reducer Flux](#action-event-effect-reducer-flux)
     - [MFE Isolation](#mfe-isolation)
   - [2.2 Constraints](#22-constraints)
     - [No React Below L3](#no-react-below-l3)
@@ -28,14 +28,50 @@
   - [3.1 Domain Model](#31-domain-model)
   - [3.2 Component Model](#32-component-model)
     - [@hai3/state (L1)](#hai3state-l1)
+      - [Why this component exists](#why-this-component-exists)
+      - [Responsibility scope](#responsibility-scope)
+      - [Responsibility boundaries](#responsibility-boundaries)
+      - [Related components (by ID)](#related-components-by-id)
     - [@hai3/screensets (L1)](#hai3screensets-l1)
+      - [Why this component exists](#why-this-component-exists-1)
+      - [Responsibility scope](#responsibility-scope-1)
+      - [Responsibility boundaries](#responsibility-boundaries-1)
+      - [Related components (by ID)](#related-components-by-id-1)
     - [@hai3/api (L1)](#hai3api-l1)
+      - [Why this component exists](#why-this-component-exists-2)
+      - [Responsibility scope](#responsibility-scope-2)
+      - [Responsibility boundaries](#responsibility-boundaries-2)
+      - [Related components (by ID)](#related-components-by-id-2)
     - [@hai3/i18n (L1)](#hai3i18n-l1)
+      - [Why this component exists](#why-this-component-exists-3)
+      - [Responsibility scope](#responsibility-scope-3)
+      - [Responsibility boundaries](#responsibility-boundaries-3)
+      - [Related components (by ID)](#related-components-by-id-3)
     - [@hai3/framework (L2)](#hai3framework-l2)
+      - [Why this component exists](#why-this-component-exists-4)
+      - [Responsibility scope](#responsibility-scope-4)
+      - [Responsibility boundaries](#responsibility-boundaries-4)
+      - [Related components (by ID)](#related-components-by-id-4)
     - [@hai3/react (L3)](#hai3react-l3)
+      - [Why this component exists](#why-this-component-exists-5)
+      - [Responsibility scope](#responsibility-scope-5)
+      - [Responsibility boundaries](#responsibility-boundaries-5)
+      - [Related components (by ID)](#related-components-by-id-5)
     - [@hai3/uikit (Standalone)](#hai3uikit-standalone)
+      - [Why this component exists](#why-this-component-exists-6)
+      - [Responsibility scope](#responsibility-scope-6)
+      - [Responsibility boundaries](#responsibility-boundaries-6)
+      - [Related components (by ID)](#related-components-by-id-6)
     - [@hai3/studio (Standalone)](#hai3studio-standalone)
+      - [Why this component exists](#why-this-component-exists-7)
+      - [Responsibility scope](#responsibility-scope-7)
+      - [Responsibility boundaries](#responsibility-boundaries-7)
+      - [Related components (by ID)](#related-components-by-id-7)
     - [@hai3/cli (Tooling)](#hai3cli-tooling)
+      - [Why this component exists](#why-this-component-exists-8)
+      - [Responsibility scope](#responsibility-scope-8)
+      - [Responsibility boundaries](#responsibility-boundaries-8)
+      - [Related components (by ID)](#related-components-by-id-8)
   - [3.3 API Contracts](#33-api-contracts)
   - [3.4 Internal Dependencies](#34-internal-dependencies)
   - [3.5 External Dependencies](#35-external-dependencies)
@@ -43,13 +79,13 @@
     - [State Management](#state-management)
     - [Build Toolchain](#build-toolchain)
     - [UI Foundation](#ui-foundation)
-    - [HTTP & Networking](#http--networking)
+    - [HTTP & Networking](#http-networking)
   - [3.6 Interactions & Sequences](#36-interactions-sequences)
     - [Application Bootstrap](#application-bootstrap)
     - [Screen-Set Data Flow](#screen-set-data-flow)
     - [MFE Extension Loading](#mfe-extension-loading)
     - [Shared Property Broadcast](#shared-property-broadcast)
-  - [3.7 Database schemas & tables](#37-database-schemas--tables)
+  - [3.7 Database schemas & tables](#37-database-schemas-tables)
 - [4. Additional context](#4-additional-context)
 - [5. Traceability](#5-traceability)
 
@@ -105,6 +141,62 @@ Requirements that significantly influence architecture decisions.
 | `cpt-hai3-fr-externalize-transform` | Vite plugin externalizes `@hai3/*` imports in MFE builds; host provides shared scope at runtime |
 | `cpt-hai3-fr-mfe-plugin` | `microfrontends()` plugin integrates MFE lifecycle, theme propagation, i18n, and shared property bridging into framework |
 | `cpt-hai3-fr-mock-toggle` | `mock()` plugin with `toggleMockMode` action enabling runtime switch between real and mock API responses |
+| `cpt-hai3-fr-sdk-state-interface` | `@hai3/state` exports EventBus, `createStore`, slice management APIs, and all associated types |
+| `cpt-hai3-fr-sdk-flux-terminology` | HAI3 Flux terms (Action, Event, Effect, Reducer, Slice) used consistently; Redux terms excluded from public API |
+| `cpt-hai3-fr-sdk-screensets-package` | `@hai3/screensets` exports full MFE type system, registry, handler, bridge, and constants with zero `@hai3/*` deps |
+| `cpt-hai3-fr-sdk-api-package` | `@hai3/api` exports `BaseApiService`, REST/SSE protocols, mock plugins, `apiRegistry`, and type guards; only `axios` as peer dep |
+| `cpt-hai3-fr-sdk-i18n-package` | `@hai3/i18n` exports I18nRegistry, Language enum, formatters, and metadata utilities with zero dependencies |
+| `cpt-hai3-fr-sdk-framework-layer` | `@hai3/framework` wires SDK capabilities; depends only on SDK packages, provides `createHAI3()` and `createHAI3App()` |
+| `cpt-hai3-fr-sdk-react-layer` | `@hai3/react` depends only on `@hai3/framework`; provides `HAI3Provider` and typed hooks; no layout components |
+| `cpt-hai3-fr-sdk-module-augmentation` | TypeScript module augmentation for `EventPayloadMap` and `RootState` extensibility; custom events type-safe |
+| `cpt-hai3-fr-appconfig-tenant` | `Tenant` type with `{ id: string }`; tenant change events via event bus (`app/tenant/changed`, `app/tenant/cleared`) |
+| `cpt-hai3-fr-appconfig-router-config` | `HAI3Config.routerMode` supporting `'browser'`, `'hash'`, `'memory'` routing strategies |
+| `cpt-hai3-fr-appconfig-layout-visibility` | Imperative actions (`setFooterVisible`, `setMenuVisible`, `setSidebarVisible`) control layout region visibility |
+| `cpt-hai3-fr-sse-mock-mode` | `SseMockPlugin` short-circuits `EventSource` creation; returns `MockEventSource` for dev/test environments |
+| `cpt-hai3-fr-sse-protocol-registry` | `BaseApiService` uses protocol registry; protocols registered by constructor name via type-safe `protocol<T>()` |
+| `cpt-hai3-fr-sse-type-safe-events` | SSE events typed via `EventPayloadMap` module augmentation for compile-time safety |
+| `cpt-hai3-fr-mfe-entry-types` | `MfeEntry`, `MfeEntryMF`, `Extension`, `ScreenExtension` types define MFE communication contracts |
+| `cpt-hai3-fr-mfe-ext-domain` | `ExtensionDomain` type defines id, sharedProperties, actions, lifecycleStages, and timeout contract |
+| `cpt-hai3-fr-mfe-shared-property` | `SharedProperty` type with `id: string` and `value: unknown`; constants are GTS type IDs |
+| `cpt-hai3-fr-mfe-action-types` | `Action` and `ActionsChain` types enable chain-based MFE action execution with fallback support |
+| `cpt-hai3-fr-mfe-theme-propagation` | `themes()` plugin propagates theme changes to all MFE extensions via `screensetsRegistry.updateSharedProperty()` |
+| `cpt-hai3-fr-mfe-i18n-propagation` | `i18n()` plugin propagates language changes to all MFE extensions via `screensetsRegistry.updateSharedProperty()` |
+| `cpt-hai3-fr-blob-no-revoke` | Blob URLs kept alive for page lifetime; `URL.revokeObjectURL()` never called after `import()` resolves |
+| `cpt-hai3-fr-blob-source-cache` | In-memory cache of fetched source text keyed by chunk URL; at most one network fetch per chunk across all loads |
+| `cpt-hai3-fr-blob-recursive-chain` | `createBlobUrlChain` recursively creates blob URLs for chunk and all static dependencies |
+| `cpt-hai3-fr-blob-per-load-map` | `blobUrlMap` scoped per MFE load; different loads have independent instances preventing cross-load reuse |
+| `cpt-hai3-fr-externalize-filenames` | Shared dependency chunks use deterministic filenames without content hashes for stable MFE manifests |
+| `cpt-hai3-fr-externalize-build-only` | `hai3-mfe-externalize` plugin operates at `vite build` only; does not transform imports during `vite dev` |
+| `cpt-hai3-fr-dataflow-internal-app` | Each MFE creates isolated `HAI3App` via `createHAI3().use(effects()).use(mock()).build()` with `HAI3Provider` |
+| `cpt-hai3-fr-sharescope-construction` | `MfeHandlerMF` constructs `shareScope` from manifest, writes to `globalThis.__federation_shared__` |
+| `cpt-hai3-fr-sharescope-concurrent` | Concurrent MFE loads have independent `LoadBlobState`; at most one network fetch per chunk URL |
+| `cpt-hai3-fr-broadcast-matching` | `updateSharedProperty()` propagates only to domains declaring the property in their `sharedProperties` array |
+| `cpt-hai3-fr-broadcast-validate` | GTS validation occurs before propagation; invalid values never stored or broadcast to any domain |
+| `cpt-hai3-fr-validation-gts` | `typeSystem.register()` + `typeSystem.validateInstance()` pattern validates shared property values |
+| `cpt-hai3-fr-validation-reject` | `updateSharedProperty()` throws with validation details on failure; value not stored or propagated |
+| `cpt-hai3-fr-i18n-formatters` | Locale-aware formatters (`formatDate`, `formatNumber`, `formatCurrency`, etc.) using `Intl.*` APIs |
+| `cpt-hai3-fr-i18n-formatter-exports` | Formatters exported from `@hai3/i18n`, re-exported from `@hai3/framework`, accessible via `useFormatters()` |
+| `cpt-hai3-fr-i18n-graceful-invalid` | All formatters return `''` for null, undefined, or invalid inputs; never throw |
+| `cpt-hai3-fr-i18n-hybrid-namespace` | Two-tier namespaces: `screenset.<id>` for shared content, `screen.<setId>.<screenId>` for screen-specific |
+| `cpt-hai3-fr-uikit-react19-ref` | All UIKit components use React 19 native ref-as-prop; `forwardRef` not used |
+| `cpt-hai3-fr-uikit-layout` | Layout components: AspectRatio, Drawer, Resizable, ScrollArea, Separator, Card, Dialog, Sheet |
+| `cpt-hai3-fr-uikit-nav` | Navigation components: Breadcrumb, Pagination, NavigationMenu, Menubar, Tabs |
+| `cpt-hai3-fr-uikit-form` | Form components: Input, Textarea, Checkbox, RadioGroup, NativeSelect, Calendar, InputOTP, Label, Field, InputGroup |
+| `cpt-hai3-fr-uikit-chart` | Chart components built on Recharts: ChartContainer, ChartTooltip, ChartLegend; Line, Bar, Area, Pie types |
+| `cpt-hai3-fr-uikit-toast-hook` | `useToast` hook wraps Sonner; returns typed methods: toast, success, error, warning, info, loading, promise, dismiss |
+| `cpt-hai3-fr-studio-panel` | `StudioPanel` floating overlay: draggable, resizable, collapsible; visible only in dev mode; state in localStorage |
+| `cpt-hai3-fr-studio-controls` | StudioPanel provides: theme selector, MFE package selector, language selector, mock/real API toggle |
+| `cpt-hai3-fr-studio-persistence` | Theme, language, mock API state, GTS package persisted to localStorage; restored on Studio mount |
+| `cpt-hai3-fr-studio-viewport` | Studio button and panel clamped to viewport (20px margin) on load and window resize |
+| `cpt-hai3-fr-studio-independence` | `@hai3/studio` standalone package; `"sideEffects": false`; excluded from production via `import.meta.env.DEV` |
+| `cpt-hai3-fr-cli-package` | `@hai3/cli` workspace package with binary `hai3`; ESM (Node 18+) and programmatic API |
+| `cpt-hai3-fr-cli-commands` | CLI commands: create, update, scaffold layout/screenset, validate components, ai sync, migrate |
+| `cpt-hai3-fr-cli-templates` | Template system with `copy-templates.ts` build script, `manifest.json`; templates are user-owned |
+| `cpt-hai3-fr-cli-skills` | CLI build copies OpenSpec skills to `.claude/skills/`, `.cursor/skills/`, `.windsurf/skills/`, `.github/copilot-commands/` |
+| `cpt-hai3-fr-pub-metadata` | All `@hai3/*` packages include complete NPM metadata: author, license, repository, engines, exports |
+| `cpt-hai3-fr-pub-versions` | All `@hai3/*` packages use aligned (same) version numbers |
+| `cpt-hai3-fr-pub-esm` | ESM-first module format: `"type": "module"`, dual exports (ESM + CJS), TypeScript declarations |
+| `cpt-hai3-fr-pub-ci` | CI auto-publishes affected packages to NPM in layer order on version change merge; stops on first failure |
 
 #### NFR Allocation
 
@@ -130,7 +222,7 @@ Requirements that significantly influence architecture decisions.
 
 ### 1.3 Architecture Layers
 
-- [ ] `p1` - **ID**: `cpt-hai3-tech-layer-architecture`
+- [x] `p1` - **ID**: `cpt-hai3-tech-layer-architecture`
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -168,7 +260,7 @@ Requirements that significantly influence architecture decisions.
 
 #### Event-Driven Architecture
 
-- [ ] `p1` - **ID**: `cpt-hai3-principle-event-driven-architecture`
+- [x] `p1` - **ID**: `cpt-hai3-principle-event-driven-architecture`
 
 **ADRs**: `cpt-hai3-adr-event-driven-flux-dataflow`
 
@@ -178,7 +270,7 @@ The event bus uses a publish/subscribe model with typed event names and payloads
 
 #### Layer Isolation
 
-- [ ] `p1` - **ID**: `cpt-hai3-principle-layer-isolation`
+- [x] `p1` - **ID**: `cpt-hai3-principle-layer-isolation`
 
 **ADRs**: `cpt-hai3-adr-four-layer-sdk-architecture`
 
@@ -188,7 +280,7 @@ Standalone packages (UIKit, Studio, CLI) exist outside the layer hierarchy and d
 
 #### Plugin-First Composition
 
-- [ ] `p1` - **ID**: `cpt-hai3-principle-plugin-first-composition`
+- [x] `p1` - **ID**: `cpt-hai3-principle-plugin-first-composition`
 
 **ADRs**: `cpt-hai3-adr-plugin-based-framework-composition`
 
@@ -198,7 +290,7 @@ The host application composes its feature set by chaining `.use()` calls: `creat
 
 #### Self-Registering Registries
 
-- [ ] `p2` - **ID**: `cpt-hai3-principle-self-registering-registries`
+- [x] `p2` - **ID**: `cpt-hai3-principle-self-registering-registries`
 
 Registries (screensets, UIKit components, themes, API services, routes, i18n namespaces) populate themselves at import time through side-effect registrations. Consumers never edit a central registry file to add entries. Each screen-set, component, or service registers itself in its own module. The registry root file only provides the registry factory/accessor — it never contains an item list.
 
@@ -206,7 +298,7 @@ This eliminates merge conflicts on registry files and enables tree-shaking of un
 
 #### Action → Event → Effect → Reducer Flux
 
-- [ ] `p1` - **ID**: `cpt-hai3-principle-action-event-effect-reducer-flux`
+- [x] `p1` - **ID**: `cpt-hai3-principle-action-event-effect-reducer-flux`
 
 **ADRs**: `cpt-hai3-adr-event-driven-flux-dataflow`
 
@@ -216,7 +308,7 @@ The terminology follows Redux Toolkit conventions: slices, reducers, selectors, 
 
 #### MFE Isolation
 
-- [ ] `p1` - **ID**: `cpt-hai3-principle-mfe-isolation`
+- [x] `p1` - **ID**: `cpt-hai3-principle-mfe-isolation`
 
 **ADRs**: `cpt-hai3-adr-blob-url-mfe-isolation`
 
@@ -226,7 +318,7 @@ Microfrontend extensions execute in an isolated context. JavaScript isolation is
 
 #### No React Below L3
 
-- [ ] `p1` - **ID**: `cpt-hai3-constraint-no-react-below-l3`
+- [x] `p1` - **ID**: `cpt-hai3-constraint-no-react-below-l3`
 
 **ADRs**: `cpt-hai3-adr-four-layer-sdk-architecture`
 
@@ -236,7 +328,7 @@ L1 SDK and L2 Framework packages SHALL NOT import React or any React-specific AP
 
 #### Zero Cross-Dependencies at L1
 
-- [ ] `p1` - **ID**: `cpt-hai3-constraint-zero-cross-deps-at-l1`
+- [x] `p1` - **ID**: `cpt-hai3-constraint-zero-cross-deps-at-l1`
 
 **ADRs**: `cpt-hai3-adr-four-layer-sdk-architecture`
 
@@ -246,7 +338,7 @@ No L1 SDK package may depend on another L1 SDK package. `@hai3/state` SHALL NOT 
 
 #### No Package Internals Imports
 
-- [ ] `p2` - **ID**: `cpt-hai3-constraint-no-package-internals-imports`
+- [x] `p2` - **ID**: `cpt-hai3-constraint-no-package-internals-imports`
 
 Consumers SHALL NOT import from sub-paths of workspace packages (e.g., `@hai3/state/src/eventBus`). All public API is exported through the package entry point. Internal module structure is an implementation detail that may change without notice.
 
@@ -254,13 +346,13 @@ Consumers SHALL NOT import from sub-paths of workspace packages (e.g., `@hai3/st
 
 #### No Barrel Exports for Registries
 
-- [ ] `p2` - **ID**: `cpt-hai3-constraint-no-barrel-exports-for-registries`
+- [x] `p2` - **ID**: `cpt-hai3-constraint-no-barrel-exports-for-registries`
 
 Registry root files SHALL NOT re-export individual registry items. Each registered item (screen-set, component, service) self-registers via side-effect import. The registry file provides only the factory, accessor, or type — never the item list. This prevents barrel files from defeating tree-shaking and eliminates merge conflicts on central export lists.
 
 #### TypeScript Strict Mode
 
-- [ ] `p1` - **ID**: `cpt-hai3-constraint-typescript-strict-mode`
+- [x] `p1` - **ID**: `cpt-hai3-constraint-typescript-strict-mode`
 
 All packages compile with `"strict": true` in `tsconfig.json`. Use of `any`, `as unknown as`, or `@ts-ignore` is forbidden. Type safety is enforced at compile time across all layers. Module augmentation (`declare module`) is the approved mechanism for extending framework types from plugins.
 
@@ -268,7 +360,7 @@ All packages compile with `"strict": true` in `tsconfig.json`. Use of `any`, `as
 
 #### ESM-First Module Format
 
-- [ ] `p1` - **ID**: `cpt-hai3-constraint-esm-first-module-format`
+- [x] `p1` - **ID**: `cpt-hai3-constraint-esm-first-module-format`
 
 **ADRs**: `cpt-hai3-adr-esm-first-module-format`
 
@@ -342,7 +434,7 @@ All packages output ESM as the primary module format. `package.json` files inclu
 
 #### @hai3/state (L1)
 
-- [ ] `p1` - **ID**: `cpt-hai3-component-state`
+- [x] `p1` - **ID**: `cpt-hai3-component-state`
 
 ##### Why this component exists
 
@@ -371,7 +463,7 @@ Provides the foundational state management and event infrastructure that all oth
 
 #### @hai3/screensets (L1)
 
-- [ ] `p1` - **ID**: `cpt-hai3-component-screensets`
+- [x] `p1` - **ID**: `cpt-hai3-component-screensets`
 
 ##### Why this component exists
 
@@ -399,7 +491,7 @@ Defines the contract between the host application and microfrontend extensions. 
 
 #### @hai3/api (L1)
 
-- [ ] `p1` - **ID**: `cpt-hai3-component-api`
+- [x] `p1` - **ID**: `cpt-hai3-component-api`
 
 ##### Why this component exists
 
@@ -428,7 +520,7 @@ Provides a unified API service layer that abstracts protocol differences (REST, 
 
 #### @hai3/i18n (L1)
 
-- [ ] `p1` - **ID**: `cpt-hai3-component-i18n`
+- [x] `p1` - **ID**: `cpt-hai3-component-i18n`
 
 ##### Why this component exists
 
@@ -455,7 +547,7 @@ Provides internationalization infrastructure with support for 36 languages, loca
 
 #### @hai3/framework (L2)
 
-- [ ] `p1` - **ID**: `cpt-hai3-component-framework`
+- [x] `p1` - **ID**: `cpt-hai3-component-framework`
 
 ##### Why this component exists
 
@@ -488,7 +580,7 @@ Composes L1 SDK packages into a cohesive application framework through a plugin 
 
 #### @hai3/react (L3)
 
-- [ ] `p1` - **ID**: `cpt-hai3-component-react`
+- [x] `p1` - **ID**: `cpt-hai3-component-react`
 
 ##### Why this component exists
 
@@ -516,7 +608,7 @@ Bridges the framework layer to React 19, providing the provider tree, hooks, and
 
 #### @hai3/uikit (Standalone)
 
-- [ ] `p1` - **ID**: `cpt-hai3-component-uikit`
+- [x] `p1` - **ID**: `cpt-hai3-component-uikit`
 
 ##### Why this component exists
 
@@ -544,7 +636,7 @@ Provides a consistent, accessible component library built on shadcn/ui patterns.
 
 #### @hai3/studio (Standalone)
 
-- [ ] `p1` - **ID**: `cpt-hai3-component-studio`
+- [x] `p1` - **ID**: `cpt-hai3-component-studio`
 
 ##### Why this component exists
 
@@ -571,7 +663,7 @@ Provides a development-time overlay for inspecting and tweaking theme, i18n, vie
 
 #### @hai3/cli (Tooling)
 
-- [ ] `p2` - **ID**: `cpt-hai3-component-cli`
+- [x] `p2` - **ID**: `cpt-hai3-component-cli`
 
 ##### Why this component exists
 
@@ -598,8 +690,8 @@ Reduces boilerplate and enforces conventions by generating screen-sets, MFE pack
 
 HAI3 is a frontend framework; all API contracts are TypeScript interfaces consumed at build time. There are no REST/GraphQL server endpoints defined by HAI3 itself.
 
-- [ ] `p1` - **ID**: `cpt-hai3-interface-plugin`
-- **Contract**: `cpt-hai3-contract-hai3-plugin`
+- [x] `p1` - **ID**: `cpt-hai3-interface-plugin`
+- **Contract**: cpt-hai3-contract-hai3-plugin
 - **Technology**: TypeScript interface
 - **Location**: `packages/framework/src/plugin.ts`
 
@@ -617,8 +709,8 @@ interface HAI3PluginContext {
 }
 ```
 
-- [ ] `p1` - **ID**: `cpt-hai3-interface-event-bus`
-- **Contract**: `cpt-hai3-contract-event-bus`
+- [x] `p1` - **ID**: `cpt-hai3-interface-event-bus`
+- **Contract**: cpt-hai3-contract-event-bus
 - **Technology**: TypeScript interface
 - **Location**: `packages/state/src/eventBus.ts`
 
@@ -629,8 +721,8 @@ interface EventBus {
 }
 ```
 
-- [ ] `p1` - **ID**: `cpt-hai3-interface-screenset-registry`
-- **Contract**: `cpt-hai3-contract-screenset-registry`
+- [x] `p1` - **ID**: `cpt-hai3-interface-screenset-registry`
+- **Contract**: cpt-hai3-contract-screenset-registry
 - **Technology**: TypeScript interface
 - **Location**: `packages/screensets/src/registry.ts`
 
@@ -642,8 +734,8 @@ interface ScreensetsRegistry {
 }
 ```
 
-- [ ] `p1` - **ID**: `cpt-hai3-interface-api-service`
-- **Contract**: `cpt-hai3-contract-api-service`
+- [x] `p1` - **ID**: `cpt-hai3-interface-api-service`
+- **Contract**: cpt-hai3-contract-api-service
 - **Technology**: TypeScript interface
 - **Location**: `packages/api/src/service.ts`
 
@@ -655,8 +747,8 @@ interface ApiService<T> {
 }
 ```
 
-- [ ] `p1` - **ID**: `cpt-hai3-interface-shared-property`
-- **Contract**: `cpt-hai3-contract-shared-property`
+- [x] `p1` - **ID**: `cpt-hai3-interface-shared-property`
+- **Contract**: cpt-hai3-contract-shared-property
 - **Technology**: TypeScript interface
 - **Location**: `packages/framework/src/sharedProperty.ts`
 
@@ -667,6 +759,27 @@ interface SharedPropertyBridge {
   onSharedPropertyChange<T>(key: string, handler: (value: T) => void): Unsubscribe;
 }
 ```
+
+**Public Package Interfaces**
+
+| Interface | Package | Description |
+|-----------|---------|-------------|
+| `cpt-hai3-interface-state` | `@hai3/state` | Event-driven state management with EventBus, Redux-backed store, dynamic slice registration, and type-safe module augmentation |
+| `cpt-hai3-interface-screensets` | `@hai3/screensets` | MFE type system, ScreensetsRegistry, MfeHandler, MfeBridge, Shadow DOM utilities, GTS validation plugin, action/property constants |
+| `cpt-hai3-interface-api` | `@hai3/api` | Protocol-agnostic API layer with REST and SSE protocols, plugin chain, mock mode, type guards |
+| `cpt-hai3-interface-i18n` | `@hai3/i18n` | 36-language i18n registry, locale-aware formatters, RTL support, language metadata |
+| `cpt-hai3-interface-framework` | `@hai3/framework` | Plugin architecture with `createHAI3()` builder, presets, layout domain slices, effect coordination, re-exports all L1 APIs |
+| `cpt-hai3-interface-react` | `@hai3/react` | HAI3Provider, typed hooks, MFE hooks, ExtensionDomainSlot, RefContainerProvider, re-exports all L2 APIs |
+| `cpt-hai3-interface-uikit` | `@hai3/uikit` | shadcn/ui-based component library with 30+ base components, variant enums, theme CSS variables, Recharts charts |
+| `cpt-hai3-interface-studio` | `@hai3/studio` | Dev-only floating overlay with MFE package selector, theme/language/mock controls, persistence, viewport clamping |
+| `cpt-hai3-interface-cli` | `@hai3/cli` | Project scaffolding, code generation, migration runners, AI tool configuration sync |
+
+**External Integration Contracts**
+
+| Contract | Description |
+|----------|-------------|
+| `cpt-hai3-contract-mfe-manifest` | MFE packages provide a manifest (JSON) declaring remoteEntry, exposedModules, and sharedDependencies with optional chunkPath |
+| `cpt-hai3-contract-federation-runtime` | Federation runtime's `importShared()` resolves from `globalThis.__federation_shared__` (compatible with vite-plugin-federation v1.4.x) |
 
 ### 3.4 Internal Dependencies
 

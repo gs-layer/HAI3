@@ -2,23 +2,56 @@
 
 - [x] `p1` - **ID**: `cpt-hai3-featstatus-uikit-components`
 
-- [x] `p1` - `cpt-hai3-feature-uikit-components`
+<!-- toc -->
 
-## Table of Contents
+- [1. Feature Context](#1-feature-context)
+  - [1.1 Overview](#11-overview)
+  - [1.2 Purpose](#12-purpose)
+  - [1.3 Actors](#13-actors)
+  - [1.4 References](#14-references)
+- [2. Actor Flows (CDSL)](#2-actor-flows-cdsl)
+  - [Consume a Base Component](#consume-a-base-component)
+  - [Consume a Composite Component](#consume-a-composite-component)
+  - [Apply Theme to Document](#apply-theme-to-document)
+  - [Apply Theme to Shadow DOM Root](#apply-theme-to-shadow-dom-root)
+  - [Display Toast Notification](#display-toast-notification)
+  - [Display Promise Toast](#display-promise-toast)
+  - [Register and Look Up Component by Enum](#register-and-look-up-component-by-enum)
+- [3. Processes / Business Logic (CDSL)](#3-processes-business-logic-cdsl)
+  - [Apply Theme to Document](#apply-theme-to-document-1)
+  - [Apply Theme to Shadow Root](#apply-theme-to-shadow-root)
+  - [Merge Toast Defaults](#merge-toast-defaults)
+  - [Validate Ref-as-Prop Pattern](#validate-ref-as-prop-pattern)
+- [4. States (CDSL)](#4-states-cdsl)
+  - [Sidebar Collapsed State](#sidebar-collapsed-state)
+  - [DataTable Internal State](#datatable-internal-state)
+  - [Toast Lifecycle](#toast-lifecycle)
+- [5. Definitions of Done](#5-definitions-of-done)
+  - [React 19 Ref-as-Prop Pattern](#react-19-ref-as-prop-pattern)
+  - [Layout Components](#layout-components)
+  - [Navigation Components](#navigation-components)
+  - [Form Components](#form-components)
+  - [Data Display and Chart Components](#data-display-and-chart-components)
+  - [Toast System](#toast-system)
+  - [Theme System](#theme-system)
+  - [Component Registry Types](#component-registry-types)
+  - [Standalone Package Constraint](#standalone-package-constraint)
+- [6. Acceptance Criteria](#6-acceptance-criteria)
+- [Additional Context](#additional-context)
+  - [Composite vs Base Component Boundary](#composite-vs-base-component-boundary)
+  - [Tailwind Class and rem Scaling](#tailwind-class-and-rem-scaling)
+  - [HSL vs OKLCH Color Formats](#hsl-vs-oklch-color-formats)
+  - [No Application State in UIKit](#no-application-state-in-uikit)
 
-1. [Feature Context](#feature-context)
-2. [Actor Flows](#actor-flows)
-3. [Processes / Business Logic](#processes-business-logic)
-4. [States](#states)
-5. [Definitions of Done](#definitions-of-done)
-6. [Acceptance Criteria](#acceptance-criteria)
-7. [Additional Context](#additional-context)
+<!-- /toc -->
+
+- [x] `p2` - `cpt-hai3-feature-uikit-components`
 
 ---
 
-## Feature Context
+## 1. Feature Context
 
-### 1. Overview
+### 1.1 Overview
 
 `@hai3/uikit` is the standalone presentational component library for the HAI3 dev kit. It delivers a consistent, accessible set of base and composite React components built on shadcn/ui patterns, Radix UI primitives, and Tailwind CSS utility classes.
 
@@ -28,7 +61,7 @@ Primary value: eliminates the cost of building and maintaining a custom componen
 
 Key assumptions: consumers run React 19; Tailwind CSS and its configuration are available in the consuming application's build pipeline.
 
-### 2. Purpose
+### 1.2 Purpose
 
 Enable application developers and screen-set authors to build production interfaces by importing ready-made, typed, accessible components from a single package entry point, without introducing any coupling to HAI3 framework internals.
 
@@ -39,12 +72,12 @@ Success criteria:
 - Theme CSS variables can be applied to both `document.documentElement` and arbitrary Shadow DOM roots
 - The package is tree-shakeable and free of framework dependencies
 
-### 3. Actors
+### 1.3 Actors
 
 - `cpt-hai3-actor-developer` — application and screen-set author consuming components
 - `cpt-hai3-actor-uikit-maintainer` — owns the `@hai3/uikit` package; adds, refines, and publishes components
 
-### 4. References
+### 1.4 References
 
 - DECOMPOSITION: `cpt-hai3-feature-uikit-components` (section 2.8)
 - DESIGN component: `cpt-hai3-component-uikit`
@@ -55,7 +88,7 @@ Success criteria:
 
 ---
 
-## Actor Flows
+## 2. Actor Flows (CDSL)
 
 ### Consume a Base Component
 
@@ -145,7 +178,7 @@ Success criteria:
 
 ---
 
-## Processes / Business Logic
+## 3. Processes / Business Logic (CDSL)
 
 ### Apply Theme to Document
 
@@ -206,7 +239,7 @@ Describes the rule applied when authoring or reviewing UIKit components to ensur
 
 ---
 
-## States
+## 4. States (CDSL)
 
 ### Sidebar Collapsed State
 
@@ -247,7 +280,7 @@ Each toast instance produced by `useToast()` progresses through states managed e
 
 ---
 
-## Definitions of Done
+## 5. Definitions of Done
 
 ### React 19 Ref-as-Prop Pattern
 
@@ -481,7 +514,7 @@ The package exports `UiKitComponent` enum, `UiKitIcon` enum, `UiKitComponentMap`
 
 ---
 
-## Acceptance Criteria
+## 6. Acceptance Criteria
 
 - [x] `forwardRef` is not imported in any file under `packages/uikit/src/`
 - [x] All base and composite components accept an optional `ref` prop typed as `React.Ref<ElementType>`

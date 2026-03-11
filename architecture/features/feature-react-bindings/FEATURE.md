@@ -1,23 +1,62 @@
 # Feature: React Bindings
 
+
+<!-- toc -->
+
+- [1. Feature Context](#1-feature-context)
+  - [1.1 Overview](#11-overview)
+  - [1.2 Purpose](#12-purpose)
+  - [1.3 Actors](#13-actors)
+  - [1.4 References](#14-references)
+- [2. Actor Flows (CDSL)](#2-actor-flows-cdsl)
+  - [Bootstrap Application with HAI3Provider](#bootstrap-application-with-hai3provider)
+  - [Access Typed Redux State in a Component](#access-typed-redux-state-in-a-component)
+  - [Dispatch Actions from a Component](#dispatch-actions-from-a-component)
+  - [Use Translations in a Component](#use-translations-in-a-component)
+  - [Lazy-Load Screen Translations](#lazy-load-screen-translations)
+  - [Switch Theme from a Component](#switch-theme-from-a-component)
+  - [Access Locale-Aware Formatters](#access-locale-aware-formatters)
+  - [Render an MFE Extension in a Domain Slot](#render-an-mfe-extension-in-a-domain-slot)
+  - [Subscribe to Shared Property from MFE](#subscribe-to-shared-property-from-mfe)
+  - [Request Host Action from MFE](#request-host-action-from-mfe)
+  - [Observe Domain Extensions](#observe-domain-extensions)
+  - [Observe Registered Packages](#observe-registered-packages)
+  - [Observe Active Screen Package](#observe-active-screen-package)
+  - [Provide MFE Context to Child Extension](#provide-mfe-context-to-child-extension)
+  - [Access the HAI3 App Instance Directly](#access-the-hai3-app-instance-directly)
+- [3. Processes / Business Logic (CDSL)](#3-processes-business-logic-cdsl)
+  - [Resolve HAI3App Instance](#resolve-hai3app-instance)
+  - [Load Screen Translations](#load-screen-translations)
+  - [Build Provider Tree](#build-provider-tree)
+  - [Validate MFE Context Guard](#validate-mfe-context-guard)
+  - [Compute Stable External Store Snapshots](#compute-stable-external-store-snapshots)
+- [4. States (CDSL)](#4-states-cdsl)
+  - [Extension Slot Lifecycle](#extension-slot-lifecycle)
+  - [Screen Translation Loading](#screen-translation-loading)
+- [5. Definitions of Done](#5-definitions-of-done)
+  - [Root Provider and App Resolution](#root-provider-and-app-resolution)
+  - [Typed Redux Hooks](#typed-redux-hooks)
+  - [Translation Hook](#translation-hook)
+  - [Screen Translation Hook](#screen-translation-hook)
+  - [Theme Hook](#theme-hook)
+  - [Formatters Hook](#formatters-hook)
+  - [Extension Domain Slot Component](#extension-domain-slot-component)
+  - [MFE Hooks](#mfe-hooks)
+  - [Domain and Package Observation Hooks](#domain-and-package-observation-hooks)
+  - [RefContainerProvider](#refcontainerprovider)
+  - [EventPayloadMap Module Augmentation Re-export](#eventpayloadmap-module-augmentation-re-export)
+- [6. Acceptance Criteria](#6-acceptance-criteria)
+
+<!-- /toc -->
+
 - [x] `p1` - **ID**: `cpt-hai3-featstatus-react-bindings`
 
 - [x] `p2` - `cpt-hai3-feature-react-bindings`
-
-## Table of Contents
-
-1. [Feature Context](#feature-context)
-2. [Actor Flows](#actor-flows)
-3. [Processes / Business Logic](#processes--business-logic)
-4. [States](#states)
-5. [Definitions of Done](#definitions-of-done)
-6. [Acceptance Criteria](#acceptance-criteria)
-
 ---
 
-## Feature Context
+## 1. Feature Context
 
-### 1. Overview
+### 1.1 Overview
 
 React Bindings is the L3 boundary that exposes the HAI3 framework to React 19 applications. It converts the framework's plain-object output (`HAI3App`) into React context, typed hooks, and MFE rendering components, forming the primary developer-facing API surface of the entire system.
 
@@ -30,20 +69,20 @@ Key assumptions:
 - A `HAI3App` instance exists before `HAI3Provider` is rendered (either pre-built or created internally).
 - MFE hooks may only be called from within `MfeProvider` context.
 
-### 2. Purpose
+### 1.2 Purpose
 
 Bridge `@hai3/framework` to React 19 by providing the provider tree, typed hooks, and MFE rendering components that application developers interact with directly. Keep all React-specific code confined to L3, preserving framework-agnosticism of L1 and L2.
 
 Success criteria: Developers can wrap their application with `<HAI3Provider>`, access typed Redux state, translations, theme, shared properties, and domain extensions solely through hooks exported from `@hai3/react`, with no need to import from `@hai3/framework` or lower layers.
 
-### 3. Actors
+### 1.3 Actors
 
 - `cpt-hai3-actor-developer`
 - `cpt-hai3-actor-host-app`
 - `cpt-hai3-actor-microfrontend`
 - `cpt-hai3-actor-runtime`
 
-### 4. References
+### 1.4 References
 
 - Overall Design: [DESIGN.md](../../DESIGN.md)
 - Decomposition: [DECOMPOSITION.md](../../DECOMPOSITION.md) — Section 2.7
@@ -53,7 +92,7 @@ Success criteria: Developers can wrap their application with `<HAI3Provider>`, a
 
 ---
 
-## Actor Flows
+## 2. Actor Flows (CDSL)
 
 ### Bootstrap Application with HAI3Provider
 
@@ -265,7 +304,7 @@ Success criteria: Developers can wrap their application with `<HAI3Provider>`, a
 
 ---
 
-## Processes / Business Logic
+## 3. Processes / Business Logic (CDSL)
 
 ### Resolve HAI3App Instance
 
@@ -330,7 +369,7 @@ Prevents unnecessary re-renders in store-subscribed hooks by returning referenti
 
 ---
 
-## States
+## 4. States (CDSL)
 
 ### Extension Slot Lifecycle
 
@@ -361,7 +400,7 @@ Tracks per-language load state for `useScreenTranslations`.
 
 ---
 
-## Definitions of Done
+## 5. Definitions of Done
 
 ### Root Provider and App Resolution
 
@@ -593,7 +632,7 @@ All five MFE-scoped hooks (`useMfeBridge`, `useMfeContext`, `useSharedProperty`,
 
 ---
 
-## Acceptance Criteria
+## 6. Acceptance Criteria
 
 - [x]`HAI3Provider` renders without errors when given only `children`, with `config`, with a pre-built `app`, and with `mfeBridge`
 - [x]`useAppSelector` returns typed state; re-renders component when selected value changes, does not re-render when unrelated state changes

@@ -1,24 +1,48 @@
 # Feature: Publishing Pipeline
 
+
+<!-- toc -->
+
+- [1. Feature Context](#1-feature-context)
+  - [1.1 Overview](#11-overview)
+  - [1.2 Purpose](#12-purpose)
+  - [1.3 Actors](#13-actors)
+  - [1.4 References](#14-references)
+- [2. Actor Flows (CDSL)](#2-actor-flows-cdsl)
+  - [Publish on PR Merge](#publish-on-pr-merge)
+  - [Publish Single Package](#publish-single-package)
+  - [Developer Version Bump](#developer-version-bump)
+- [3. Processes / Business Logic (CDSL)](#3-processes-business-logic-cdsl)
+  - [Resolve Dist-Tag](#resolve-dist-tag)
+  - [Publish with Retry](#publish-with-retry)
+  - [Detect Version Changes](#detect-version-changes)
+  - [Validate Package Metadata](#validate-package-metadata)
+  - [Layer Sort Order](#layer-sort-order)
+- [4. States (CDSL)](#4-states-cdsl)
+  - [Workflow Run State](#workflow-run-state)
+  - [Package Publish State](#package-publish-state)
+- [5. Definitions of Done](#5-definitions-of-done)
+  - [Package Metadata Contract](#package-metadata-contract)
+  - [Version Alignment](#version-alignment)
+  - [Automated CI Publish Workflow](#automated-ci-publish-workflow)
+  - [Idempotent Registry Check](#idempotent-registry-check)
+- [6. Acceptance Criteria](#6-acceptance-criteria)
+- [Additional Context](#additional-context)
+  - [Build Order vs. Publish Order](#build-order-vs-publish-order)
+  - [Prerelease Dist-Tag Strategy](#prerelease-dist-tag-strategy)
+  - [Fail-Fast vs. Continue-on-Error](#fail-fast-vs-continue-on-error)
+  - [Architecture Enforcement Connection](#architecture-enforcement-connection)
+
+<!-- /toc -->
+
 - [x] `p2` - **ID**: `cpt-hai3-featstatus-publishing-pipeline`
 
 - [x] `p2` - `cpt-hai3-feature-publishing-pipeline`
-
-## Table of Contents
-
-1. [Feature Context](#feature-context)
-2. [Actor Flows](#actor-flows)
-3. [Processes / Business Logic](#processes-business-logic)
-4. [States](#states)
-5. [Definitions of Done](#definitions-of-done)
-6. [Acceptance Criteria](#acceptance-criteria)
-7. [Additional Context](#additional-context)
-
 ---
 
-## Feature Context
+## 1. Feature Context
 
-### 1. Overview
+### 1.1 Overview
 
 Automated NPM package publishing pipeline for the HAI3 monorepo. When a pull request that
 bumps one or more `@hai3/*` package versions is merged to `main`, the CI/CD system detects
@@ -35,7 +59,7 @@ required to ship a package.
 **Key assumptions**: GitHub Actions has access to a valid `NPM_TOKEN` secret. All packages
 live under `packages/` in the monorepo root and are built via `npm run build:packages`.
 
-### 2. Purpose
+### 1.2 Purpose
 
 Guarantee that every version bump merged to `main` results in a correct, idempotent, and
 layer-ordered NPM publish with no human intervention after the PR merge.
@@ -43,13 +67,13 @@ layer-ordered NPM publish with no human intervention after the PR merge.
 Success criteria: A PR that bumps `@hai3/state` from `0.3.0` to `0.4.0-alpha.0` triggers
 exactly one publish of that version; subsequent re-runs of the same workflow skip it.
 
-### 3. Actors
+### 1.3 Actors
 
 - `cpt-hai3-actor-ci-cd`
 - `cpt-hai3-actor-build-system`
 - `cpt-hai3-actor-developer`
 
-### 4. References
+### 1.4 References
 
 - DECOMPOSITION: [feature #11 — Publishing Pipeline](../../DECOMPOSITION.md#211-publishing-pipeline)
 - DESIGN: [Layer Isolation principle](../../DESIGN.md#layer-isolation), [ESM-First constraint](../../DESIGN.md#esm-first-module-format)
@@ -59,7 +83,7 @@ exactly one publish of that version; subsequent re-runs of the same workflow ski
 
 ---
 
-## Actor Flows
+## 2. Actor Flows (CDSL)
 
 ### Publish on PR Merge
 
@@ -102,20 +126,20 @@ exactly one publish of that version; subsequent re-runs of the same workflow ski
 
 ### Developer Version Bump
 
-- [ ] `p2` - **ID**: `cpt-hai3-flow-publishing-pipeline-developer-version-bump`
+- [x] `p2` - **ID**: `cpt-hai3-flow-publishing-pipeline-developer-version-bump`
 
 **Actors**: `cpt-hai3-actor-developer`
 
 **Purpose**: Describes the developer action that triggers the automated pipeline.
 
-1. [ ] `p2` - Developer updates `version` in one or more `packages/*/package.json` files — `inst-bump-version`
-2. [ ] `p2` - Developer ensures all bumped packages share the same version number (aligned versioning) — `inst-aligned-versions`
-3. [ ] `p2` - Developer opens a PR targeting `main`; CI (`main.yml`) validates architecture, types, and linting — `inst-pr-ci`
-4. [ ] `p2` - Developer merges the PR; GitHub triggers the publish workflow — `inst-merge-triggers`
+1. [x] `p2` - Developer updates `version` in one or more `packages/*/package.json` files — `inst-bump-version`
+2. [x] `p2` - Developer ensures all bumped packages share the same version number (aligned versioning) — `inst-aligned-versions`
+3. [x] `p2` - Developer opens a PR targeting `main`; CI (`main.yml`) validates architecture, types, and linting — `inst-pr-ci`
+4. [x] `p2` - Developer merges the PR; GitHub triggers the publish workflow — `inst-merge-triggers`
 
 ---
 
-## Processes / Business Logic
+## 3. Processes / Business Logic (CDSL)
 
 ### Resolve Dist-Tag
 
@@ -163,7 +187,7 @@ Compares the current `HEAD` state against the pre-push commit to identify packag
 
 ### Validate Package Metadata
 
-- [ ] `p2` - **ID**: `cpt-hai3-algo-publishing-pipeline-validate-metadata`
+- [x] `p2` - **ID**: `cpt-hai3-algo-publishing-pipeline-validate-metadata`
 
 Each package's `package.json` must satisfy the publishing metadata contract before the
 package is considered publishable. This validation is a pre-condition for a successful
@@ -179,8 +203,8 @@ Required fields for all packages:
 - `type` field set to `"module"`
 - `engines.node` set to `">=18.0.0"` or higher
 
-1. [ ] `p2` - FOR EACH required field: IF the field is absent or has an incorrect value THEN RETURN error identifying the missing field and the package — `inst-field-check`
-2. [ ] `p2` - IF all fields are present and valid THEN RETURN valid — `inst-metadata-valid`
+1. [x] `p2` - FOR EACH required field: IF the field is absent or has an incorrect value THEN RETURN error identifying the missing field and the package — `inst-field-check`
+2. [x] `p2` - IF all fields are present and valid THEN RETURN valid — `inst-metadata-valid`
 
 ---
 
@@ -205,7 +229,7 @@ publish order. Lower numbers publish first.
 
 ---
 
-## States
+## 4. States (CDSL)
 
 ### Workflow Run State
 
@@ -240,7 +264,7 @@ Describes the publishing state of a single package within one workflow run.
 
 ---
 
-## Definitions of Done
+## 5. Definitions of Done
 
 ### Package Metadata Contract
 
@@ -359,7 +383,7 @@ publishes. Packages whose version already exists on NPM are silently skipped.
 
 ---
 
-## Acceptance Criteria
+## 6. Acceptance Criteria
 
 - [ ] A PR that bumps the version of a single `@hai3/*` package triggers exactly one successful `npm publish` for that package upon merge to `main`
 - [ ] A PR that bumps versions in multiple packages across layers publishes them in layer order: L1 SDK first, CLI last

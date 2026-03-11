@@ -2,22 +2,46 @@
 
 - [x] `p1` - **ID**: `cpt-hai3-featstatus-i18n-infrastructure`
 
-- [x] `p1` - **ID**: `cpt-hai3-feature-i18n-infrastructure`
+<!-- toc -->
 
-## Table of Contents
+- [1. Feature Context](#1-feature-context)
+  - [1.1 Overview](#11-overview)
+  - [1.2 Purpose](#12-purpose)
+  - [1.3 Actors](#13-actors)
+  - [1.4 References](#14-references)
+- [2. Actor Flows (CDSL)](#2-actor-flows-cdsl)
+  - [Language Activation](#language-activation)
+  - [Screenset Translation Registration](#screenset-translation-registration)
+  - [Screen Translation Registration and Lazy Load](#screen-translation-registration-and-lazy-load)
+  - [Translation Key Resolution](#translation-key-resolution)
+  - [Formatter Usage](#formatter-usage)
+- [3. Processes / Business Logic (CDSL)](#3-processes-business-logic-cdsl)
+  - [Language File Mapping](#language-file-mapping)
+  - [Create Translation Loader](#create-translation-loader)
+  - [Namespace Lazy-Load Exclusion](#namespace-lazy-load-exclusion)
+  - [HTML Attribute Synchronization](#html-attribute-synchronization)
+  - [Translation Path Traversal](#translation-path-traversal)
+  - [Formatter Locale Resolution](#formatter-locale-resolution)
+  - [Graceful Formatter Input Validation](#graceful-formatter-input-validation)
+- [4. States (CDSL)](#4-states-cdsl)
+  - [Language Registry State](#language-registry-state)
+  - [Namespace Cache State](#namespace-cache-state)
+- [5. Definitions of Done](#5-definitions-of-done)
+  - [Language Support and Registry](#language-support-and-registry)
+  - [Locale-Aware Formatters](#locale-aware-formatters)
+  - [Hybrid Namespace Model](#hybrid-namespace-model)
+  - [Lazy Chunk Loading](#lazy-chunk-loading)
+- [6. Acceptance Criteria](#6-acceptance-criteria)
 
-1. [Feature Context](#feature-context)
-2. [Actor Flows](#actor-flows)
-3. [Processes / Business Logic](#processes-business-logic)
-4. [States](#states)
-5. [Definitions of Done](#definitions-of-done)
-6. [Acceptance Criteria](#acceptance-criteria)
+<!-- /toc -->
+
+- [x] `p2` - `cpt-hai3-feature-i18n-infrastructure`
 
 ---
 
-## Feature Context
+## 1. Feature Context
 
-### 1. Overview
+### 1.1 Overview
 
 Internationalization Infrastructure provides the foundational i18n layer for the entire HAI3 system. It covers 36 built-in language configurations, locale-aware formatting utilities, a hybrid two-tier namespace model for translations, and lazy on-demand chunk loading per namespace. The package is an L1 SDK concern with zero `@hai3/*` dependencies, consumed by `@hai3/framework` (which initializes and propagates language state) and by `@hai3/react` (which exposes `useTranslation()` and `useFormatters()` hooks).
 
@@ -27,18 +51,18 @@ Primary value: Enables lazy, namespace-scoped translation loading that grows pro
 
 Key assumptions: Consumers register translation loaders before activating a language. The framework layer owns language lifecycle events (`i18n/language/changed`); this package owns the registry, formatters, and loading mechanics only.
 
-### 2. Purpose
+### 1.2 Purpose
 
 Expose a complete, zero-dependency i18n foundation so that host applications, screen-sets, and MFEs share consistent translation and formatting patterns without incurring the cost of loading all translations up front.
 
 Success criteria: Application initial bundle contains no translation JSON beyond what is explicitly pre-loaded; every locale-aware formatter returns a correct locale string or `''` for invalid inputs; the `I18nRegistry` singleton correctly resolves two-tier namespace keys.
 
-### 3. Actors
+### 1.3 Actors
 
-- `cpt-hai3-actor-framework-developer` — Platform engineer who wires the i18n plugin into `createHAI3()` and selects the initial language.
+- `cpt-hai3-actor-developer` — Platform engineer who wires the i18n plugin into `createHAI3()` and selects the initial language.
 - `cpt-hai3-actor-screenset-author` — Developer who registers translation loaders per screenset/screen and authors JSON translation files.
 
-### 4. References
+### 1.4 References
 
 - DESIGN: [DESIGN.md](../../DESIGN.md) — `cpt-hai3-component-i18n`, principles `cpt-hai3-principle-self-registering-registries`, constraints `cpt-hai3-constraint-no-react-below-l3`, `cpt-hai3-constraint-zero-cross-deps-at-l1`
 - DECOMPOSITION: [DECOMPOSITION.md](../../DECOMPOSITION.md) — feature `cpt-hai3-feature-i18n-infrastructure` (section 2.5)
@@ -47,13 +71,13 @@ Success criteria: Application initial bundle contains no translation JSON beyond
 
 ---
 
-## Actor Flows
+## 2. Actor Flows (CDSL)
 
 ### Language Activation
 
 - [x] `p1` - **ID**: `cpt-hai3-flow-i18n-infrastructure-language-activation`
 
-**Actors**: `cpt-hai3-actor-framework-developer`
+**Actors**: `cpt-hai3-actor-developer`
 
 1. [x] `p1` - Framework calls `i18nRegistry.setLanguage(language)` — `inst-set-language`
 2. [x] `p1` - Registry stores the language as current, then calls `updateHtmlAttributes` — `inst-update-html-attrs`
@@ -117,7 +141,7 @@ Success criteria: Application initial bundle contains no translation JSON beyond
 
 ---
 
-## Processes / Business Logic
+## 3. Processes / Business Logic (CDSL)
 
 ### Language File Mapping
 
@@ -196,7 +220,7 @@ Every formatter validates its primary input before passing it to the `Intl` laye
 
 ---
 
-## States
+## 4. States (CDSL)
 
 ### Language Registry State
 
@@ -223,7 +247,7 @@ Tracks the loaded/unloaded state per `(namespace, language)` pair.
 
 ---
 
-## Definitions of Done
+## 5. Definitions of Done
 
 ### Language Support and Registry
 
@@ -307,7 +331,7 @@ The `I18nRegistryImpl` enforces a two-tier namespace convention: `screenset.{id}
 
 ---
 
-## Acceptance Criteria
+## 6. Acceptance Criteria
 
 - [x] `@hai3/i18n` has zero `@hai3/*` runtime dependencies; `npm ls` shows no cross-SDK imports
 - [x] `Language` enum has exactly 36 members; `SUPPORTED_LANGUAGES` has exactly 36 entries; `getRTLLanguages()` returns exactly `['ar', 'he', 'fa', 'ur']`
