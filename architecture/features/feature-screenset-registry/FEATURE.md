@@ -273,8 +273,8 @@ GTS packages are extracted from extension IDs automatically — there is no expl
 - [x] `p1` - **ID**: `cpt-hai3-algo-screenset-registry-handler-resolution`
 
 1. - [x] `p1` - IF no handlers are registered in the registry, RETURN (skip validation — early registration before handler setup is allowed; loading will fail later at runtime) - `inst-skip-if-no-handlers`
-2. - [x] `p1` - FOR EACH registered handler: call `handler.canHandle(entryTypeId)` using `typeSystem.isTypeOf(entryTypeId, handler.handledBaseTypeId)` - `inst-check-can-handle`
-3. - [x] `p1` - IF any handler returns true RETURN (at least one handler can process the entry type) - `inst-return-if-handled`
+2. - [x] `p1` - FOR EACH registered handler: call `typeSystem.isTypeOf(entryTypeId, handler.handledBaseTypeId)` using the registry's own `typeSystem` — the handler does not perform this check itself - `inst-check-can-handle`
+3. - [x] `p1` - IF any handler matches RETURN (at least one handler can process the entry type) - `inst-return-if-handled`
 4. - [x] `p1` - IF no handler can handle the type RETURN throw `EntryTypeNotHandledError` with the entry type ID and list of handler base type IDs - `inst-throw-not-handled`
 
 ### Operation Serialization
@@ -453,7 +453,7 @@ All registration paths perform GTS-native validation:
 
 - [x] `p1` - **ID**: `cpt-hai3-dod-screenset-registry-handler-injection`
 
-`ScreensetsRegistryConfig` has `typeSystem: TypeSystemPlugin` (required) and `mfeHandlers?: MfeHandler[]` (optional). If handlers are provided, they are stored sorted by descending `priority`. `MfeHandler` is an abstract class with `handledBaseTypeId`, `priority`, `bridgeFactory`, `canHandle(entryTypeId)`, and abstract `load(entry)`. `MfeBridgeFactory` is an abstract class with `create(domainId, entryTypeId, instanceId)` and `dispose(bridge)`. Handler selection during entry type validation uses `typeSystem.isTypeOf` for type hierarchy matching.
+`ScreensetsRegistryConfig` has `typeSystem: TypeSystemPlugin` (required) and `mfeHandlers?: MfeHandler[]` (optional). If handlers are provided, they are stored sorted by descending `priority`. `MfeHandler` is an abstract class with `handledBaseTypeId: string`, `priority: number`, `bridgeFactory`, and abstract `load(entry)`. The handler does NOT hold a `typeSystem` reference and does NOT have a `canHandle()` method — the registry performs handler resolution directly using its own `typeSystem.isTypeOf(entryTypeId, handler.handledBaseTypeId)`. `MfeBridgeFactory` is an abstract class with `create(domainId, entryTypeId, instanceId)` and `dispose(bridge)`.
 
 **Covers (PRD)**:
 - `cpt-hai3-fr-sdk-screensets-package`

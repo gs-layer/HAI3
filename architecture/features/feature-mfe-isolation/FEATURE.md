@@ -333,6 +333,7 @@ Tracks the fetch state of each chunk URL across all loads for the lifetime of th
 **Implementation details**:
 - File: `packages/screensets/src/mfe/handler/mf-handler.ts`
 - Key types: `LoadBlobState` (per-load), `ManifestCache`, `MfeLoaderConfig`
+- Constructor: `MfeHandlerMF(handledBaseTypeId: string, config?: MfeLoaderConfig)` — does NOT take `typeSystem`; the registry owns type hierarchy checks. Consumer passes the GTS base type ID constant (e.g., `HAI3_MFE_ENTRY_MF`) at instantiation.
 - Public entry: `MfeHandlerMF.load(entry: MfeEntryMF): Promise<MfeEntryLifecycle<ChildMfeBridge>>`
 
 **Implements**:

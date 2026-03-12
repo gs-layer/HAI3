@@ -457,7 +457,7 @@ When the host changes theme or language, the respective plugin propagates the ne
 
 - [x] `p1` - **ID**: `cpt-hai3-dod-framework-composition-mfe-plugin`
 
-The `microfrontends()` plugin builds a `ScreensetsRegistry` instance (with GTS type system and optional MFE handlers) via `screensetsRegistryFactory.build()`. It exposes the registry as `app.screensetsRegistry`. It registers the `mfe` Redux slice tracking per-extension registration state (`unregistered` | `registering` | `registered` | `error`) and per-domain mount state. It wires MFE lifecycle actions (`loadExtension`, `mountExtension`, `unmountExtension`, `registerExtension`, `unregisterExtension`) into the HAI3 actions map. The plugin intercepts `executeActionsChain` completions for mount/unmount to dispatch Redux slice updates.
+The `microfrontends()` plugin accepts `MicrofrontendsConfig` with required `typeSystem: TypeSystemPlugin` and optional `mfeHandlers: MfeHandler[]`. It builds a `ScreensetsRegistry` instance via `screensetsRegistryFactory.build({ typeSystem: config.typeSystem, mfeHandlers: config.mfeHandlers })` — the plugin does NOT import or hardcode any specific `TypeSystemPlugin` implementation. It exposes the registry as `app.screensetsRegistry`. It registers the `mfe` Redux slice tracking per-extension registration state (`unregistered` | `registering` | `registered` | `error`) and per-domain mount state. It wires MFE lifecycle actions (`loadExtension`, `mountExtension`, `unmountExtension`, `registerExtension`, `unregisterExtension`) into the HAI3 actions map. The plugin intercepts `executeActionsChain` completions for mount/unmount to dispatch Redux slice updates.
 
 **Domain constants** (GTS instance IDs):
 - `HAI3_SCREEN_DOMAIN` — main content area
