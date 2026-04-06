@@ -1,6 +1,5 @@
 import { apiRegistry } from '@cyberfabric/api';
-import { createHAI3 } from '@cyberfabric/framework';
-import { auth } from '@cyberfabric/framework';
+import { createHAI3, auth, frontxAuthProvider } from '@cyberfabric/framework';
 
 import { DummyJsonService } from './dummyjson-service.mjs';
 
@@ -9,8 +8,8 @@ import { DummyJsonService } from './dummyjson-service.mjs';
  *
  * Expected:
  * - initial /auth/me with bad token -> 401
- * - auth() calls provider.refresh()
- * - auth() retries original request with new token
+ * - FrontxAuthRestPlugin calls provider.refresh()
+ * - FrontxAuthRestPlugin retries original request with new token
  * - final /auth/me succeeds
  *
  * Note:
@@ -31,7 +30,8 @@ const state = {
   refreshCalls: 0,
 };
 
-const provider = {
+const provider = frontxAuthProvider({
+  async login() { return { type: 'none' }; },
   async getSession() {
     return state.token ? { kind: 'bearer', token: state.token } : null;
   },
@@ -56,7 +56,7 @@ const provider = {
     state.refreshToken = next.refreshToken;
     return { kind: 'bearer', token: state.token, refreshToken: state.refreshToken };
   },
-};
+});
 
 createHAI3().use(auth({ provider })).build();
 

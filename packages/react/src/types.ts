@@ -14,6 +14,10 @@ import type {
   RootState,
   Language,
   Formatters,
+  AuthLoginInput,
+  AuthTransition,
+  AuthIdentity,
+  AuthProvider,
 } from '@cyberfabric/framework';
 import type { MfeContextValue } from './mfe/MfeContext';
 
@@ -136,3 +140,90 @@ export interface UseThemeReturn {
  * References @cyberfabric/i18n Formatters so signatures stay in sync.
  */
 export type UseFormattersReturn = Formatters;
+
+// ============================================================================
+// Auth Hook Return Types
+// ============================================================================
+
+/**
+ * useLogin Hook Return Type
+ * Calls authProvider.login() and handles redirect on success.
+ *
+ * @param input - Login credentials
+ * @param redirectTo - Optional redirect URL override (takes priority over AuthTransition.redirectUrl)
+ * @returns The AuthTransition from the provider
+ */
+export type UseLoginReturn = (input: AuthLoginInput, redirectTo?: string) => Promise<AuthTransition>;
+
+/**
+ * useLogout Hook Return Type
+ * Calls authProvider.logout() and handles redirect on success.
+ *
+ * @param redirectTo - Optional redirect URL override (takes priority over AuthTransition.redirectUrl)
+ * @returns The AuthTransition from the provider
+ */
+export type UseLogoutReturn = (redirectTo?: string) => Promise<AuthTransition>;
+
+/**
+ * useGetIdentity Hook Return Type
+ * Fetches user identity on mount and exposes reactive state.
+ */
+export interface UseGetIdentityReturn<TIdentity extends AuthIdentity = AuthIdentity> {
+  /** The fetched identity, or null if not yet loaded / not available */
+  identity: TIdentity | null;
+  /** Whether the identity fetch is in progress */
+  isPending: boolean;
+  /** Error from the identity fetch, if any */
+  error: Error | null;
+  /** Re-trigger the identity fetch */
+  refetch: () => void;
+}
+
+// ============================================================================
+// App Runtime Extensions & Resolved Auth Provider
+// ============================================================================
+
+/**
+ * Application-level type overrides.
+ *
+ * Augment via `declare module '@cyberfabric/react'` to narrow the auth
+ * provider type globally.
+ *
+ * @example
+ * ```typescript
+ * declare module '@cyberfabric/react' {
+ *   interface AppRuntimeExtensions {
+ *     authProvider: MyConcreteAuthProvider;
+ *   }
+ * }
+ * ```
+ */
+export interface AppRuntimeExtensions {}
+
+type ResolveKey<T, K extends string, Fallback> =
+  K extends keyof T ? T[K] : Fallback;
+
+/**
+ * Resolves the effective auth provider type from the react-side
+ * `AppRuntimeExtensions` (merges both framework and react augmentations).
+ */
+export type ResolvedAuthProvider = ResolveKey<AppRuntimeExtensions, 'authProvider', AuthProvider>;
+
+/**
+ * Global bridge interface used to forward react-side augmentations into
+ * the framework's `AppRuntimeExtensions`. A global is needed because
+ * `interface extends` inside `declare module` cannot use inline `import()`
+ * expressions (TS2499).
+ */
+declare global {
+  interface __CyberfabricReactAppRuntimeExtensions extends AppRuntimeExtensions {}
+}
+
+/**
+ * Forward react-side augmentations into the framework so that
+ * `HAI3App.getAuthProvider()` (typed via framework's `ResolvedAuthProvider`)
+ * picks up the narrowed auth provider type automatically.
+ */
+declare module '@cyberfabric/framework' {
+  interface AppRuntimeExtensions extends __CyberfabricReactAppRuntimeExtensions {}
+}

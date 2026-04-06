@@ -1,15 +1,14 @@
-import { apiRegistry } from '@cyberfabric/api';
-import { createHAI3 } from '@cyberfabric/framework';
-import { auth } from '@cyberfabric/framework';
+import { apiRegistry } from "@cyberfabric/api";
+import { createHAI3, auth, frontxAuthProvider } from "@cyberfabric/framework";
 
-import { DummyJsonService } from './dummyjson-service.mjs';
+import { DummyJsonService } from "./dummyjson-service.mjs";
 
 /**
  * Scenario A: bearer token attachment.
  *
  * Expected:
  * - login succeeds
- * - subsequent /auth/me call succeeds (200) because auth() adds Authorization header
+ * - subsequent /auth/me call succeeds (200) because FrontxAuthRestPlugin adds Authorization header
  */
 
 apiRegistry.reset?.();
@@ -23,28 +22,30 @@ const state = {
   token: login.accessToken,
 };
 
-const provider = {
+const provider = frontxAuthProvider({
+  async login() {
+    return { type: "none" };
+  },
   async getSession() {
-    return state.token ? { kind: 'bearer', token: state.token } : null;
+    return state.token ? { kind: "bearer", token: state.token } : null;
   },
   async checkAuth() {
     return { authenticated: !!state.token };
   },
   async logout() {
     state.token = null;
-    return { type: 'none' };
+    return { type: "none" };
   },
-};
+});
 
 createHAI3().use(auth({ provider })).build();
 
 const me = await svc.me();
-if (!me || typeof me !== 'object') {
-  throw new Error('Unexpected /auth/me response');
+if (!me || typeof me !== "object") {
+  throw new Error("Unexpected /auth/me response");
 }
 
-console.log('[bearer-attach] OK:', {
+console.log("[bearer-attach] OK:", {
   id: me.id,
   username: me.username,
 });
-

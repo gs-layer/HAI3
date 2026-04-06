@@ -27,6 +27,10 @@ export {
   useScreenTranslations,
   useFormatters,
   useTheme,
+  useAuthProvider,
+  useLogin,
+  useLogout,
+  useGetIdentity,
 } from './hooks';
 
 // ============================================================================
@@ -66,6 +70,10 @@ export type {
   UseScreenTranslationsReturn,
   UseFormattersReturn,
   UseThemeReturn,
+  UseLoginReturn,
+  UseLogoutReturn,
+  UseGetIdentityReturn,
+  AppRuntimeExtensions,
 } from './types';
 
 // ============================================================================
@@ -184,7 +192,10 @@ export {
 
   // Auth
   auth,
-  hai3ApiTransport,
+  frontxAuthProvider,
+  type FrontxAuthProvider,
+  type FrontxAuthProviderConfig,
+  type FrontxAuthProviderOptions,
 
   // API
   apiRegistry,
@@ -241,13 +252,13 @@ export type {
   ChangeThemePayload,
   SetLanguagePayload,
   AuthPluginConfig,
-  AuthRuntime,
 
   // Auth contract types
   AuthProvider,
   AuthSession,
   AuthContext,
   AuthIdentity,
+  FrontxAuthIdentity,
   AuthCheckResult,
   AuthLoginInput,
   AuthCallbackInput,
@@ -342,6 +353,7 @@ export type {
   LanguageMetadata,
   I18nRegistryType,
 } from '@cyberfabric/framework';
+
 
 // ============================================================================
 // MFE Re-exports from @cyberfabric/framework (Layering Compliance)

@@ -1,13 +1,12 @@
-import axios from 'axios';
+import axios from "axios";
 
-import { apiRegistry } from '@cyberfabric/api';
-import { createHAI3 } from '@cyberfabric/framework';
-import { auth } from '@cyberfabric/framework';
+import { apiRegistry } from "@cyberfabric/api";
+import { createHAI3, auth, frontxAuthProvider } from "@cyberfabric/framework";
 
-import { DummyJsonService } from './dummyjson-service.mjs';
+import { DummyJsonService } from "./dummyjson-service.mjs";
 
 /**
- * Scenario C: AbortSignal cancellation bypasses auth onError chain.
+ * Scenario C: AbortSignal cancellation bypasses FrontxAuthRestPlugin onError chain.
  *
  * Expected:
  * - request is canceled
@@ -27,22 +26,25 @@ const state = {
   refreshCalls: 0,
 };
 
-const provider = {
+const provider = frontxAuthProvider({
+  async login() {
+    return { type: "none" };
+  },
   async getSession() {
-    return state.token ? { kind: 'bearer', token: state.token } : null;
+    return state.token ? { kind: "bearer", token: state.token } : null;
   },
   async checkAuth() {
     return { authenticated: !!state.token };
   },
   async logout() {
     state.token = null;
-    return { type: 'none' };
+    return { type: "none" };
   },
   async refresh() {
     state.refreshCalls += 1;
     return null;
   },
-};
+});
 
 createHAI3().use(auth({ provider })).build();
 
@@ -52,7 +54,7 @@ ac.abort();
 
 try {
   await p;
-  throw new Error('Expected request to be canceled');
+  throw new Error("Expected request to be canceled");
 } catch (e) {
   if (!axios.isCancel(e)) {
     throw new Error(`Expected axios cancel error, got: ${String(e)}`);
@@ -63,5 +65,4 @@ if (state.refreshCalls !== 0) {
   throw new Error(`Expected refreshCalls=0, got ${state.refreshCalls}`);
 }
 
-console.log('[abort] OK:', { refreshCalls: state.refreshCalls });
-
+console.log("[abort] OK:", { refreshCalls: state.refreshCalls });

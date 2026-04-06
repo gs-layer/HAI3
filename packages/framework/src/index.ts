@@ -30,33 +30,45 @@ export {
   i18n,
   effects,
   auth,
-  hai3ApiTransport,
+  frontxAuthProvider,
+  type FrontxAuthProvider,
+  type FrontxAuthProviderConfig,
+  type FrontxAuthProviderOptions,
   type AuthPluginConfig,
-  type AuthRuntime,
   mock,
   microfrontends,
   type MockPluginConfig,
 } from './plugins';
 
-// Auth contract types (re-exported from @cyberfabric/auth)
+// Auth contract types
 export type {
   AuthProvider,
-  AuthSession,
   AuthContext,
   AuthIdentity,
   AuthCheckResult,
   AuthLoginInput,
   AuthCallbackInput,
   AuthTransition,
+  AuthTransitionType,
   AuthPermissions,
   AccessQuery,
   AccessDecision,
+  AuthSession,
+  BearerAuthSession,
+  CookieAuthSession,
+  CustomAuthSession,
+  FrontxAuthIdentity,
+  FrontxAuthCheckResult,
+  AuthTransportRequest,
+  AuthTransportResponse,
+  AuthTransportAdapter,
+  AuthTransportErrorEvent,
   AuthCapabilities,
   AuthState,
   AuthStateEvent,
   AuthStateListener,
   AuthUnsubscribe,
-} from '@cyberfabric/auth';
+} from './plugins/auth';
 
 // MFE Plugin Exports
 export {
@@ -176,6 +188,8 @@ export {
 // ============================================================================
 
 export type {
+  AppRuntimeExtensions,
+  ResolvedAuthProvider,
   HAI3Config,
   HAI3Plugin,
   HAI3AppBuilder,

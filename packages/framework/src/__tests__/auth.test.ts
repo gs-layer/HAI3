@@ -5,76 +5,76 @@
  * 1. Bearer header attached when provider session is bearer token.
  * 2. Cookie-session credentials enabled only for relative URLs and allowlisted origins.
  * 3. Refresh+retry on 401: calls ctx.retry once with new Authorization.
- * 4. Custom transport binder is used and default binding is not.
- * 5. app.auth surface exists and delegates methods.
- * 6. CSRF header attached when csrfHeaderName + session.csrfToken are set.
- * 7. provider.onTransportError invoked on every transport error.
- * 8. Cookie session refresh path: retry without header override.
- * 9. Refresh dedup: concurrent 401s share a single in-flight refresh promise.
- * 10. provider.destroy() called on app.destroy().
+ * 4. app.getAuthProvider() exposes the configured AuthProvider.
+ * 5. CSRF header attached when csrfHeaderName + session.csrfToken are set.
+ * 6. provider.onTransportError invoked on every transport error.
+ * 7. Cookie session refresh path: retry without header override.
+ * 8. Refresh dedup: concurrent 401s share a single in-flight refresh promise.
+ * 9. provider.destroy() called on app.destroy().
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { apiRegistry, RestProtocol } from '@cyberfabric/api';
+import { apiRegistry } from '@cyberfabric/api';
 import { createStore } from '@cyberfabric/state';
-import type { RestPlugin, RestRequestContext } from '@cyberfabric/api';
-import type { AuthProvider, AuthSession } from '@cyberfabric/auth';
+import type { RestRequestContext } from '@cyberfabric/api';
+import { auth, FrontxAuthRestPlugin, type AuthSession, type FrontxAuthProvider } from '../plugins/auth';
 import { createHAI3 } from '../createHAI3';
-import { auth, hai3ApiTransport } from '../plugins/auth';
-import type { AuthTransportBinder } from '../plugins/auth';
 
 // ---------------------------------------------------------------------------
 // Fixtures
 // ---------------------------------------------------------------------------
 
+const noopTransition = { type: 'none' as const };
+
 function makeBearerProvider(
   token: string,
-  refresh?: AuthProvider['refresh'],
-): AuthProvider {
+  refresh?: FrontxAuthProvider['refresh'],
+): FrontxAuthProvider {
   return {
+    login: vi.fn().mockResolvedValue(noopTransition),
+    logout: vi.fn().mockResolvedValue(noopTransition),
+    handleCallback: vi.fn().mockResolvedValue(noopTransition),
+    getIdentity: vi.fn().mockResolvedValue(null),
     getSession: vi.fn().mockResolvedValue({ kind: 'bearer', token } satisfies AuthSession),
     checkAuth: vi.fn().mockResolvedValue({ authenticated: true }),
-    logout: vi.fn().mockResolvedValue({ type: 'none' }),
     ...(refresh ? { refresh } : {}),
   };
 }
 
-function makeCookieProvider(): AuthProvider {
+function makeCookieProvider(): FrontxAuthProvider {
   return {
+    login: vi.fn().mockResolvedValue(noopTransition),
+    logout: vi.fn().mockResolvedValue(noopTransition),
+    handleCallback: vi.fn().mockResolvedValue(noopTransition),
+    getIdentity: vi.fn().mockResolvedValue(null),
     getSession: vi.fn().mockResolvedValue({ kind: 'cookie' } satisfies AuthSession),
     checkAuth: vi.fn().mockResolvedValue({ authenticated: true }),
-    logout: vi.fn().mockResolvedValue({ type: 'none' }),
   };
 }
 
-function makeNullSessionProvider(): AuthProvider {
+function makeNullSessionProvider(): FrontxAuthProvider {
   return {
+    login: vi.fn().mockResolvedValue(noopTransition),
+    logout: vi.fn().mockResolvedValue(noopTransition),
+    handleCallback: vi.fn().mockResolvedValue(noopTransition),
+    getIdentity: vi.fn().mockResolvedValue(null),
     getSession: vi.fn().mockResolvedValue(null),
     checkAuth: vi.fn().mockResolvedValue({ authenticated: false }),
-    logout: vi.fn().mockResolvedValue({ type: 'none' }),
   };
 }
 
-/** Use hai3ApiTransport directly to capture the internal plugin instance. */
+/** Build a FrontxAuthRestPlugin wired to the given provider's hooks. */
 function capturePlugin(
-  provider: AuthProvider,
+  provider: FrontxAuthProvider,
   opts?: { allowedCookieOrigins?: string[]; csrfHeaderName?: string },
-): RestPlugin {
-  const binder = hai3ApiTransport();
-  let captured: RestPlugin | null = null;
-
-  binder({
-    provider,
+): FrontxAuthRestPlugin {
+  return new FrontxAuthRestPlugin({
+    getSession: provider.getSession.bind(provider),
+    refresh: provider.refresh?.bind(provider),
+    onTransportError: provider.onTransportError?.bind(provider),
     allowedCookieOrigins: opts?.allowedCookieOrigins,
     csrfHeaderName: opts?.csrfHeaderName,
-    addRestPlugin: (p) => {
-      captured = p;
-    },
-    removeRestPlugin: vi.fn(),
   });
-
-  if (!captured) throw new Error('addRestPlugin was not called by binder');
-  return captured;
 }
 
 function makeReqCtx(url: string, headers: Record<string, string> = {}): RestRequestContext {
@@ -102,7 +102,7 @@ describe('auth plugin', () => {
     it('attaches Authorization: Bearer header when provider returns bearer token', async () => {
       const plugin = capturePlugin(makeBearerProvider('tok-abc'));
 
-      const result = (await plugin.onRequest!(makeReqCtx('/api'))) as RestRequestContext;
+      const result = (await plugin.onRequest(makeReqCtx('/api'))) as RestRequestContext;
 
       expect(result.headers['Authorization']).toBe('Bearer tok-abc');
     });
@@ -111,7 +111,7 @@ describe('auth plugin', () => {
       const plugin = capturePlugin(makeNullSessionProvider());
       const ctx = makeReqCtx('/api');
 
-      const result = (await plugin.onRequest!(ctx)) as RestRequestContext;
+      const result = (await plugin.onRequest(ctx)) as RestRequestContext;
 
       expect(result.headers['Authorization']).toBeUndefined();
     });
@@ -124,7 +124,7 @@ describe('auth plugin', () => {
     it('sets withCredentials=true for relative URLs', async () => {
       const plugin = capturePlugin(makeCookieProvider());
 
-      const result = (await plugin.onRequest!(makeReqCtx('/relative/path'))) as RestRequestContext;
+      const result = (await plugin.onRequest(makeReqCtx('/relative/path'))) as RestRequestContext;
 
       expect(result.withCredentials).toBe(true);
     });
@@ -134,7 +134,7 @@ describe('auth plugin', () => {
         allowedCookieOrigins: ['https://trusted.example.com'],
       });
 
-      const result = (await plugin.onRequest!(
+      const result = (await plugin.onRequest(
         makeReqCtx('https://other.example.com/api'),
       )) as RestRequestContext;
 
@@ -146,7 +146,7 @@ describe('auth plugin', () => {
         allowedCookieOrigins: ['https://trusted.example.com'],
       });
 
-      const result = (await plugin.onRequest!(
+      const result = (await plugin.onRequest(
         makeReqCtx('https://trusted.example.com/api'),
       )) as RestRequestContext;
 
@@ -154,17 +154,20 @@ describe('auth plugin', () => {
     });
 
     // -----------------------------------------------------------------------
-    // 6. CSRF header
+    // 5. CSRF header
     // -----------------------------------------------------------------------
     it('attaches csrfHeaderName header when csrfHeaderName is configured and session has csrfToken', async () => {
-      const provider: AuthProvider = {
+      const provider: FrontxAuthProvider = {
+        login: vi.fn().mockResolvedValue(noopTransition),
+        logout: vi.fn().mockResolvedValue(noopTransition),
+        handleCallback: vi.fn().mockResolvedValue(noopTransition),
+        getIdentity: vi.fn().mockResolvedValue(null),
         getSession: vi.fn().mockResolvedValue({ kind: 'cookie', csrfToken: 'csrf-abc' } satisfies AuthSession),
         checkAuth: vi.fn().mockResolvedValue({ authenticated: true }),
-        logout: vi.fn().mockResolvedValue({ type: 'none' }),
       };
       const plugin = capturePlugin(provider, { csrfHeaderName: 'X-CSRF-Token' });
 
-      const result = (await plugin.onRequest!(makeReqCtx('/api'))) as RestRequestContext;
+      const result = (await plugin.onRequest(makeReqCtx('/api'))) as RestRequestContext;
 
       expect(result.withCredentials).toBe(true);
       expect(result.headers['X-CSRF-Token']).toBe('csrf-abc');
@@ -173,7 +176,7 @@ describe('auth plugin', () => {
     it('does not attach csrf header when csrfToken is absent', async () => {
       const plugin = capturePlugin(makeCookieProvider(), { csrfHeaderName: 'X-CSRF-Token' });
 
-      const result = (await plugin.onRequest!(makeReqCtx('/api'))) as RestRequestContext;
+      const result = (await plugin.onRequest(makeReqCtx('/api'))) as RestRequestContext;
 
       expect(result.withCredentials).toBe(true);
       expect(result.headers['X-CSRF-Token']).toBeUndefined();
@@ -196,7 +199,7 @@ describe('auth plugin', () => {
         retry: vi.fn().mockResolvedValue({ status: 200, headers: {}, data: {} }),
       };
 
-      await plugin.onError!(errCtx);
+      await plugin.onError(errCtx);
 
       expect(refreshFn).toHaveBeenCalledTimes(1);
       expect(errCtx.retry).toHaveBeenCalledWith({ headers: { Authorization: 'Bearer new-tok' } });
@@ -214,7 +217,7 @@ describe('auth plugin', () => {
         retry: vi.fn(),
       };
 
-      const result = await plugin.onError!(errCtx);
+      const result = await plugin.onError(errCtx);
 
       expect(errCtx.retry).not.toHaveBeenCalled();
       expect(result).toBe(errCtx.error);
@@ -232,7 +235,7 @@ describe('auth plugin', () => {
         retry: vi.fn(),
       };
 
-      const result = await plugin.onError!(errCtx);
+      const result = await plugin.onError(errCtx);
 
       expect(errCtx.retry).not.toHaveBeenCalled();
       expect(result).toBe(errCtx.error);
@@ -249,21 +252,24 @@ describe('auth plugin', () => {
         retry: vi.fn(),
       };
 
-      const result = await plugin.onError!(errCtx);
+      const result = await plugin.onError(errCtx);
 
       expect(errCtx.retry).not.toHaveBeenCalled();
       expect(result).toBe(errCtx.error);
     });
 
     // -----------------------------------------------------------------------
-    // 8. Cookie session refresh path
+    // 7. Cookie session refresh path
     // -----------------------------------------------------------------------
     it('calls provider.refresh and retries without header override on 401 with cookie session', async () => {
       const refreshFn = vi.fn().mockResolvedValue({ kind: 'cookie' } satisfies AuthSession);
-      const provider: AuthProvider = {
+      const provider: FrontxAuthProvider = {
+        login: vi.fn().mockResolvedValue(noopTransition),
+        logout: vi.fn().mockResolvedValue(noopTransition),
+        handleCallback: vi.fn().mockResolvedValue(noopTransition),
+        getIdentity: vi.fn().mockResolvedValue(null),
         getSession: vi.fn().mockResolvedValue({ kind: 'cookie' } satisfies AuthSession),
         checkAuth: vi.fn().mockResolvedValue({ authenticated: true }),
-        logout: vi.fn().mockResolvedValue({ type: 'none' }),
         refresh: refreshFn,
       };
       const plugin = capturePlugin(provider);
@@ -276,7 +282,7 @@ describe('auth plugin', () => {
         retry: vi.fn().mockResolvedValue({ status: 200, headers: {}, data: {} }),
       };
 
-      await plugin.onError!(errCtx);
+      await plugin.onError(errCtx);
 
       expect(refreshFn).toHaveBeenCalledTimes(1);
       expect(errCtx.retry).toHaveBeenCalledTimes(1);
@@ -285,7 +291,7 @@ describe('auth plugin', () => {
     });
 
     // -----------------------------------------------------------------------
-    // 9. Refresh dedup
+    // 8. Refresh dedup
     // -----------------------------------------------------------------------
     it('deduplicates concurrent 401 refresh calls into a single in-flight promise', async () => {
       let resolveRefresh!: (value: AuthSession) => void;
@@ -307,8 +313,8 @@ describe('auth plugin', () => {
       const errCtx2 = makeErrCtx();
 
       // Start both concurrently before resolving refresh
-      const p1 = plugin.onError!(errCtx1);
-      const p2 = plugin.onError!(errCtx2);
+      const p1 = plugin.onError(errCtx1);
+      const p2 = plugin.onError(errCtx2);
 
       resolveRefresh({ kind: 'bearer', token: 'new-tok' });
 
@@ -321,114 +327,78 @@ describe('auth plugin', () => {
   });
 
   // -------------------------------------------------------------------------
-  // 4. Custom transport binder
+  // 4. app.getAuthProvider surface
   // -------------------------------------------------------------------------
-  describe('custom transport binder', () => {
-    it('invokes the custom binder on app init instead of default', () => {
-      const customBinder: AuthTransportBinder = vi.fn().mockReturnValue({ destroy: vi.fn() });
-      const provider = makeBearerProvider('tok');
-
-      const app = createHAI3().use(auth({ provider, transport: customBinder })).build();
-
-      expect(customBinder).toHaveBeenCalledTimes(1);
-      expect(customBinder).toHaveBeenCalledWith(expect.objectContaining({ provider }));
-
-      app.destroy();
-    });
-
-    it('does not add default AuthRestPlugin when custom binder does not call addRestPlugin', () => {
-      // Custom binder that intentionally does not call addRestPlugin
-      const customBinder: AuthTransportBinder = (_args) => ({ destroy: vi.fn() });
-      const provider = makeBearerProvider('tok');
-
-      const app = createHAI3().use(auth({ provider, transport: customBinder })).build();
-
-      expect(apiRegistry.plugins.getAll(RestProtocol)).toHaveLength(0);
-
-      app.destroy();
-    });
-
-    it('default binding registers one RestPlugin in apiRegistry when no custom binder given', () => {
-      const provider = makeBearerProvider('tok');
-
-      const app = createHAI3().use(auth({ provider })).build();
-
-      expect(apiRegistry.plugins.getAll(RestProtocol)).toHaveLength(1);
-
-      app.destroy();
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  // 5. app.auth surface
-  // -------------------------------------------------------------------------
-  describe('app.auth surface', () => {
+  describe('app.getAuthProvider surface', () => {
     it('is defined on the built app', () => {
       const provider = makeBearerProvider('tok');
       const app = createHAI3().use(auth({ provider })).build();
 
-      expect(app.auth).toBeDefined();
+      expect(app.getAuthProvider).toBeDefined();
 
       app.destroy();
     });
 
-    it('exposes provider reference via app.auth.provider', () => {
+    it('exposes provider reference via app.getAuthProvider()', () => {
       const provider = makeBearerProvider('tok');
       const app = createHAI3().use(auth({ provider })).build();
 
-      expect(app.auth?.provider).toBe(provider);
+      expect(app.getAuthProvider?.()).toBe(provider);
 
       app.destroy();
     });
 
-    it('app.auth.getSession delegates to provider.getSession', async () => {
+    it('session is available via app.getAuthProvider().getSession', async () => {
       const provider = makeBearerProvider('tok');
       const app = createHAI3().use(auth({ provider })).build();
       const ctx = {};
+      const fp = app.getAuthProvider!() as FrontxAuthProvider;
 
-      await app.auth?.getSession(ctx);
+      await fp.getSession(ctx);
 
       expect(provider.getSession).toHaveBeenCalledWith(ctx);
 
       app.destroy();
     });
 
-    it('app.auth.checkAuth delegates to provider.checkAuth', async () => {
+    it('provider.checkAuth is reachable via getAuthProvider()', async () => {
       const provider = makeBearerProvider('tok');
       const app = createHAI3().use(auth({ provider })).build();
+      const fp = app.getAuthProvider!() as FrontxAuthProvider;
 
-      await app.auth?.checkAuth();
+      await fp.checkAuth();
 
       expect(provider.checkAuth).toHaveBeenCalled();
 
       app.destroy();
     });
 
-    it('app.auth.logout delegates to provider.logout', async () => {
+    it('provider.logout is reachable via getAuthProvider()', async () => {
       const provider = makeBearerProvider('tok');
       const app = createHAI3().use(auth({ provider })).build();
 
-      await app.auth?.logout();
+      await app.getAuthProvider!().logout();
 
       expect(provider.logout).toHaveBeenCalled();
 
       app.destroy();
     });
 
-    it('passes through optional canAccess and subscribe when implemented', async () => {
+    it('optional canAccess and subscribe on provider work via getAuthProvider()', async () => {
       const unsubscribe = vi.fn();
-      const provider: AuthProvider = {
+      const provider: FrontxAuthProvider = {
         ...makeBearerProvider('tok'),
         canAccess: vi.fn().mockResolvedValue('allow'),
         subscribe: vi.fn().mockReturnValue(unsubscribe),
       };
       const app = createHAI3().use(auth({ provider })).build();
+      const fp = app.getAuthProvider!() as FrontxAuthProvider;
 
-      const decision = await app.auth?.canAccess?.({ action: 'read', resource: 'x' });
+      const decision = await fp.canAccess?.({ action: 'read', resource: 'x' });
       expect(decision).toBe('allow');
       expect(provider.canAccess).toHaveBeenCalledTimes(1);
 
-      const unsub = app.auth?.subscribe?.(() => undefined);
+      const unsub = fp.subscribe?.(() => undefined);
       expect(unsub).toBe(unsubscribe);
       expect(provider.subscribe).toHaveBeenCalledTimes(1);
 
@@ -436,20 +406,32 @@ describe('auth plugin', () => {
     });
 
     // -----------------------------------------------------------------------
-    // 10. provider.destroy() on app.destroy()
+    // 9. provider lifecycle: onAppInit, onAppDestroy
     // -----------------------------------------------------------------------
-    it('calls provider.destroy() when app.destroy() is called', () => {
-      const destroyFn = vi.fn();
-      const provider: AuthProvider = { ...makeBearerProvider('tok'), destroy: destroyFn };
+    it('calls provider.onAppInit(app) when app is built', () => {
+      const onAppInit = vi.fn();
+      const provider: FrontxAuthProvider = { ...makeBearerProvider('tok'), onAppInit };
+      const app = createHAI3().use(auth({ provider })).build();
+
+      expect(onAppInit).toHaveBeenCalledTimes(1);
+      expect(onAppInit).toHaveBeenCalledWith(app);
+
+      app.destroy();
+    });
+
+    it('calls provider.onAppDestroy(app) when app.destroy() is called', () => {
+      const onAppDestroy = vi.fn();
+      const provider: FrontxAuthProvider = { ...makeBearerProvider('tok'), onAppDestroy };
       const app = createHAI3().use(auth({ provider })).build();
 
       app.destroy();
 
-      expect(destroyFn).toHaveBeenCalledTimes(1);
+      expect(onAppDestroy).toHaveBeenCalledTimes(1);
+      expect(onAppDestroy).toHaveBeenCalledWith(app);
     });
 
-    it('does not throw when provider has no destroy method', () => {
-      const provider = makeBearerProvider('tok'); // no destroy
+    it('does not throw when provider has no onAppDestroy method', () => {
+      const provider = makeBearerProvider('tok');
       const app = createHAI3().use(auth({ provider })).build();
 
       expect(() => app.destroy()).not.toThrow();
@@ -457,12 +439,12 @@ describe('auth plugin', () => {
   });
 
   // -------------------------------------------------------------------------
-  // 7. Transport error hooks
+  // 6. Transport error hooks
   // -------------------------------------------------------------------------
   describe('transport error hooks', () => {
     it('calls provider.onTransportError for every transport error', async () => {
       const onTransportError = vi.fn();
-      const provider: AuthProvider = { ...makeBearerProvider('tok'), onTransportError };
+      const provider: FrontxAuthProvider = { ...makeBearerProvider('tok'), onTransportError };
       const plugin = capturePlugin(provider);
 
       const err = new Error('Network failure');
@@ -474,7 +456,7 @@ describe('auth plugin', () => {
         retry: vi.fn(),
       };
 
-      await plugin.onError!(errCtx);
+      await plugin.onError(errCtx);
 
       expect(onTransportError).toHaveBeenCalledTimes(1);
       expect(onTransportError).toHaveBeenCalledWith(
@@ -485,7 +467,7 @@ describe('auth plugin', () => {
     it('calls provider.onTransportError even for 401 errors that will be retried', async () => {
       const onTransportError = vi.fn();
       const refreshFn = vi.fn().mockResolvedValue({ kind: 'bearer', token: 'new-tok' } satisfies AuthSession);
-      const provider: AuthProvider = {
+      const provider: FrontxAuthProvider = {
         ...makeBearerProvider('old-tok', refreshFn),
         onTransportError,
       };
@@ -499,7 +481,7 @@ describe('auth plugin', () => {
         retry: vi.fn().mockResolvedValue({ status: 200, headers: {}, data: {} }),
       };
 
-      await plugin.onError!(errCtx);
+      await plugin.onError(errCtx);
 
       expect(onTransportError).toHaveBeenCalledTimes(1);
       expect(errCtx.retry).toHaveBeenCalledTimes(1);
@@ -516,26 +498,26 @@ describe('auth plugin', () => {
         retry: vi.fn(),
       };
 
-      const result = await plugin.onError!(errCtx);
+      const result = await plugin.onError(errCtx);
       expect(result).toBe(errCtx.error);
     });
   });
 
   // -------------------------------------------------------------------------
-  // 11. Protocol-relative URL credential leak
+  // 10. Protocol-relative URL credential leak
   // -------------------------------------------------------------------------
   describe('protocol-relative URL', () => {
     it('does NOT set withCredentials for protocol-relative URLs', async () => {
       const plugin = capturePlugin(makeCookieProvider());
 
-      const result = (await plugin.onRequest!(makeReqCtx('//cdn.example.com/asset'))) as RestRequestContext;
+      const result = (await plugin.onRequest(makeReqCtx('//cdn.example.com/asset'))) as RestRequestContext;
 
       expect(result.withCredentials).toBeUndefined();
     });
   });
 
   // -------------------------------------------------------------------------
-  // 12. Opaque origin "null" (sandboxed iframe / file://)
+  // 11. Opaque origin "null" (sandboxed iframe / file://)
   // -------------------------------------------------------------------------
   describe('opaque origin', () => {
     it('does NOT match opaque "null" origin against URL origins', async () => {
@@ -546,7 +528,7 @@ describe('auth plugin', () => {
         const plugin = capturePlugin(makeCookieProvider());
 
         // An absolute URL whose origin happens to be 'https://null' should NOT get credentials
-        const result = (await plugin.onRequest!(makeReqCtx('https://null/api'))) as RestRequestContext;
+        const result = (await plugin.onRequest(makeReqCtx('https://null/api'))) as RestRequestContext;
 
         expect(result.withCredentials).toBeUndefined();
       } finally {
@@ -556,19 +538,22 @@ describe('auth plugin', () => {
   });
 
   // -------------------------------------------------------------------------
-  // 13. Custom session kind (pass-through)
+  // 12. Custom session kind (pass-through)
   // -------------------------------------------------------------------------
   describe('custom session kind', () => {
     it('does not modify request for custom sessions', async () => {
-      const provider: AuthProvider = {
+      const provider: FrontxAuthProvider = {
+        login: vi.fn().mockResolvedValue(noopTransition),
+        logout: vi.fn().mockResolvedValue(noopTransition),
+        handleCallback: vi.fn().mockResolvedValue(noopTransition),
+        getIdentity: vi.fn().mockResolvedValue(null),
         getSession: vi.fn().mockResolvedValue({ kind: 'custom' } satisfies AuthSession),
         checkAuth: vi.fn().mockResolvedValue({ authenticated: true }),
-        logout: vi.fn().mockResolvedValue({ type: 'none' }),
       };
       const plugin = capturePlugin(provider);
 
       const original = makeReqCtx('/api');
-      const result = (await plugin.onRequest!(original)) as RestRequestContext;
+      const result = (await plugin.onRequest(original)) as RestRequestContext;
 
       expect(result.headers['Authorization']).toBeUndefined();
       expect(result.withCredentials).toBeUndefined();
@@ -576,10 +561,13 @@ describe('auth plugin', () => {
 
     it('returns error without retry for refreshed custom sessions', async () => {
       const refreshFn = vi.fn().mockResolvedValue({ kind: 'custom' } satisfies AuthSession);
-      const provider: AuthProvider = {
+      const provider: FrontxAuthProvider = {
+        login: vi.fn().mockResolvedValue(noopTransition),
+        logout: vi.fn().mockResolvedValue(noopTransition),
+        handleCallback: vi.fn().mockResolvedValue(noopTransition),
+        getIdentity: vi.fn().mockResolvedValue(null),
         getSession: vi.fn().mockResolvedValue({ kind: 'custom' } satisfies AuthSession),
         checkAuth: vi.fn().mockResolvedValue({ authenticated: true }),
-        logout: vi.fn().mockResolvedValue({ type: 'none' }),
         refresh: refreshFn,
       };
       const plugin = capturePlugin(provider);
@@ -592,7 +580,7 @@ describe('auth plugin', () => {
         retry: vi.fn(),
       };
 
-      const result = await plugin.onError!(errCtx);
+      const result = await plugin.onError(errCtx);
 
       expect(refreshFn).toHaveBeenCalledTimes(1);
       expect(errCtx.retry).not.toHaveBeenCalled();
@@ -601,7 +589,7 @@ describe('auth plugin', () => {
   });
 
   // -------------------------------------------------------------------------
-  // 14. Refresh rejection safety (concurrent waiters)
+  // 13. Refresh rejection safety (concurrent waiters)
   // -------------------------------------------------------------------------
   describe('refresh rejection safety', () => {
     it('returns error for all concurrent waiters when refresh rejects', async () => {
@@ -620,8 +608,8 @@ describe('auth plugin', () => {
       const ctx2 = makeErrCtx();
 
       const [result1, result2] = await Promise.all([
-        plugin.onError!(ctx1),
-        plugin.onError!(ctx2),
+        plugin.onError(ctx1),
+        plugin.onError(ctx2),
       ]);
 
       expect(result1).toBe(ctx1.error);

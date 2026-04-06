@@ -17,13 +17,16 @@ import type { HAI3Config, HAI3App } from './types';
  * Combined configuration for createFrontXApp.
  * Includes both FrontX core config and full preset config.
  */
-export interface HAI3AppConfig extends HAI3Config, FullPresetConfig {}
+export interface HAI3AppConfig extends HAI3Config, FullPresetConfig { }
 
 /**
  * Create a fully configured FrontX application.
  *
  * This is a convenience function that uses the full preset.
  * For custom plugin composition, use `createFrontX()` instead.
+ *
+ * Type narrowing for auth provider is handled via `AppRuntimeExtensions`
+ * module augmentation — no generic overloads needed.
  *
  * @param config - Optional application configuration
  * @returns The built FrontX application

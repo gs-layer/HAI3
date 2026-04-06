@@ -47,8 +47,19 @@ const app = createHAI3().use(screensets()).build();
 | `useAppSelector()` | Typed selector | Selected state |
 | `useTranslation()` | Translation utilities | `{ t, language, setLanguage, isRTL }` |
 | `useScreenTranslations()` | Load screen translations | `{ isLoaded, error }` |
-| `useNavigation()` | Navigation utilities | `{ navigateToScreen, currentScreen }` |
 | `useTheme()` | Theme utilities | `{ currentTheme, themes, setTheme }` |
+| `useAuthProvider()` | Access AuthProvider | `T \| undefined` |
+| `useLogin()` | Login callback | `(input, redirectTo?) => Promise<AuthTransition>` |
+| `useLogout()` | Logout callback | `(redirectTo?) => Promise<AuthTransition>` |
+| `useGetIdentity()` | Fetch user identity on mount | `{ identity, isPending, error, refetch }` |
+
+## AUTH HOOKS
+- `useAuthProvider<T>()`: Returns the AuthProvider from context (undefined if no auth plugin).
+  Type narrows automatically when `AppRuntimeExtensions` is augmented.
+- `useLogin()`: Wraps `authProvider.login()`, handles redirect on success.
+- `useLogout()`: Wraps `authProvider.logout()`, handles redirect on success.
+- `useGetIdentity<T>()`: Calls `authProvider.getIdentity()` on mount with reactive state.
+  Identity type is inferred from the augmented provider.
 
 ## SCREEN TRANSLATIONS
 ```tsx

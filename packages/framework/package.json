@@ -45,13 +45,9 @@
     "@cyberfabric/screensets": "*",
     "@cyberfabric/api": "*",
     "@cyberfabric/i18n": "*",
-    "@cyberfabric/auth": "*",
     "@reduxjs/toolkit": ">=2.0.0"
   },
   "peerDependenciesMeta": {
-    "@cyberfabric/auth": {
-      "optional": true
-    },
     "@cyberfabric/state": {
       "optional": false
     },

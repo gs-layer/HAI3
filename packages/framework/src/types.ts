@@ -26,6 +26,9 @@ import type { ApiRegistry } from '@cyberfabric/api';
 // From @cyberfabric/i18n
 import type { I18nRegistry } from '@cyberfabric/i18n';
 
+// Auth provider base type (used by AppRuntimeExtensions default)
+import type { AuthProvider } from './plugins/auth';
+
 // Re-export FrontXStore from @cyberfabric/store for framework consumers
 export type HAI3Store = StoreType;
 
@@ -172,7 +175,7 @@ export interface PluginProvides {
    * Use module augmentation to extend `HAI3AppRuntimeExtensions`.
    *
    * This is the non-special-case way for plugins to expose runtime APIs
-   * on the built `app` instance (e.g. `app.auth`, `app.queryClient`).
+   * on the built `app` instance (e.g. `app.getAuthProvider`, `app.queryClient`).
    */
   app?: Partial<HAI3AppRuntimeExtensions>;
   /** Redux slices to register */
@@ -363,10 +366,47 @@ export interface ThemeRegistry {
 export type MfeScreensetsRegistry = import('@cyberfabric/screensets').ScreensetsRegistry;
 
 /**
+ * Application-level type overrides.
+ *
+ * End-user applications augment this interface via `declare module` to
+ * narrow framework-provided types (e.g. the auth provider) without explicit
+ * generics at every call-site.
+ *
+ * @example
+ * ```typescript
+ * // src/app/auth/provider.ts
+ * declare module '@cyberfabric/framework' {
+ *   interface AppRuntimeExtensions {
+ *     authProvider: MyConcreteAuthProvider;
+ *   }
+ * }
+ * ```
+ */
+export interface AppRuntimeExtensions { }
+
+/**
+ * Resolves a key from an interface with a fallback.
+ * Used to safely index into `AppRuntimeExtensions` even when the key
+ * has not been declared yet (empty interface before augmentation).
+ */
+type ResolveKey<T, K extends string, Fallback> =
+  K extends keyof T ? T[K] : Fallback;
+
+/**
+ * Resolves the effective auth provider type.
+ *
+ * If the application augmented `AppRuntimeExtensions` with an `authProvider`
+ * property, that type is used; otherwise falls back to the base `AuthProvider`.
+ */
+export type ResolvedAuthProvider = ResolveKey<AppRuntimeExtensions, 'authProvider', AuthProvider>;
+
+/**
  * FrontX App Runtime Extensions
  * Plugins may augment this interface to add typed runtime APIs onto `app`.
  */
-export interface HAI3AppRuntimeExtensions {}
+export interface HAI3AppRuntimeExtensions {
+  getAuthProvider?: () => ResolvedAuthProvider;
+}
 
 /**
  * FrontX App Interface

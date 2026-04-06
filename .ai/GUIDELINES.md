@@ -1,7 +1,9 @@
 <!-- @standalone:override -->
+
 # FrontX AI Guidelines (Canonical)
 
 ## AI WORKFLOW (REQUIRED)
+
 - Route: select target file from Routing section.
 - Read: MUST read target file before changing code or docs.
 - Summarize: list 3-7 rules from target file (internal, not written).
@@ -9,28 +11,33 @@
 - STOP: if unsure which target applies, ask instead of guessing.
 
 ## CRITICAL RULE
+
 - FORBIDDEN: Making changes based on assumed rules without reading target file.
 - REQUIRED: When user says "follow X.md rules", read X.md before any change.
 
 ## ROUTING
 
 ### SDK Layer (L1) - Zero @cyberfabric dependencies
+
 - packages/state -> .ai/targets/STORE.md
 - packages/screensets -> .ai/targets/LAYOUT.md
 - packages/api -> .ai/targets/API.md
 - packages/i18n -> .ai/targets/I18N.md
-- packages/auth -> .ai/targets/AUTH.md
 
 ### Framework Layer (L2) - Depends on SDK packages
+
 - packages/framework -> .ai/targets/FRAMEWORK.md
 
 ### React Layer (L3) - Depends on Framework
+
 - packages/react -> .ai/targets/REACT.md
 
 ### UI and Dev Packages
+
 - packages/studio -> .ai/targets/STUDIO.md
 
 ### Other
+
 - packages/cli -> .ai/targets/CLI.md
 - presets/standalone, presets/monorepo -> .ai/targets/CLI.md
 - src/mfe_packages -> .ai/targets/SCREENSETS.md
@@ -41,6 +48,7 @@
 - .ai/commands, .claude/commands -> .ai/targets/AI_COMMANDS.md
 
 ## REPO INVARIANTS
+
 - Event-driven architecture only (see EVENTS.md).
 - Registries follow Open/Closed; adding items must not modify registry root files.
 - App-level deps limited to: @cyberfabric/react, react, react-dom. Standalone projects must also declare peer deps explicitly: @cyberfabric/framework, @cyberfabric/api, @cyberfabric/i18n, @cyberfabric/screensets, @cyberfabric/state.
@@ -51,6 +59,7 @@
 - REQUIRED: Use lodash for non-trivial object and array operations.
 
 ## IMPORT RULES
+
 - Inside same package: relative paths.
 - Cross-branch in app: @/ alias.
 - Cross-package: @cyberfabric/framework, @cyberfabric/react. Use local components/ui/ for UI.
@@ -58,12 +67,14 @@
 - Redux slices: import directly (no barrels).
 
 ## TYPE RULES
+
 - Use type for objects and unions; interface for React props.
 - No hardcoded string IDs.
 - Resolve type errors at boundaries using proper generics.
 - Class member order: properties -> constructor -> methods.
 
 ## STOP CONDITIONS
+
 - Editing /core/runtime or /sdk.
 - Modifying registry root files.
 - Adding new top-level dependencies.
@@ -71,6 +82,7 @@
 - Killing MCP server processes (see MCP_TROUBLESHOOTING.md).
 
 ## PRE-DIFF CHECKLIST
+
 - Routed to correct target file.
 - Target rules read and summarized internally.
 - Registry root files unchanged.
@@ -84,6 +96,7 @@
   - No console errors or missing registrations.
 
 ## BLOCKLIST
+
 - Telemetry or tracking code.
 - "as unknown as" type casts.
 - unknown in public type definitions.
@@ -93,18 +106,21 @@
 - Native helpers where lodash equivalents exist.
 
 ## DOC STYLE
+
 - Short, technical, ASCII only.
 - Use "->" arrows for flows.
 - Use BAD -> GOOD diffs when needed.
 - PR description should reference relevant rules or sections.
 
 ## CORRECTION POLICY
+
 - Add or update a rule here (short and focused).
 - Update the matching target file.
 - Store memory of the correction.
 - Re-validate using .ai/targets/AI.md.
 
 ## FEATURE CREATION POLICY
+
 - Reuse existing patterns where possible.
 - If adding a 3rd or later similar item, consider an index file.
 - If new items require central edits, redesign to self-register.

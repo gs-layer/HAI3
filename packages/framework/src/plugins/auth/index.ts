@@ -1,0 +1,40 @@
+export { auth } from './plugin';
+
+export type {
+  AuthPluginConfig,
+  AuthProvider,
+  AuthContext,
+  AuthIdentity,
+  AuthCheckResult,
+  AuthLoginInput,
+  AuthCallbackInput,
+  AuthTransition,
+  AuthTransitionType,
+  AuthPermissions,
+  AccessQuery,
+  AccessDecision,
+} from './types';
+
+export {
+  frontxAuthProvider,
+  FrontxAuthRestPlugin,
+  type FrontxAuthProvider,
+  type FrontxAuthProviderConfig,
+  type FrontxAuthProviderOptions,
+  type FrontxAuthRestPluginConfig,
+  type AuthSession,
+  type BearerAuthSession,
+  type CookieAuthSession,
+  type CustomAuthSession,
+  type FrontxAuthIdentity,
+  type FrontxAuthCheckResult,
+  type AuthTransportRequest,
+  type AuthTransportResponse,
+  type AuthTransportAdapter,
+  type AuthTransportErrorEvent,
+  type AuthCapabilities,
+  type AuthState,
+  type AuthStateEvent,
+  type AuthStateListener,
+  type AuthUnsubscribe,
+} from './frontx';

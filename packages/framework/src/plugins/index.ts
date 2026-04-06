@@ -7,7 +7,14 @@ export { themes } from './themes';
 export { layout } from './layout';
 export { i18n } from './i18n';
 export { effects } from './effects';
-export { auth, hai3ApiTransport, type AuthPluginConfig, type AuthRuntime } from './auth';
+export {
+  auth,
+  frontxAuthProvider,
+  type FrontxAuthProvider,
+  type FrontxAuthProviderConfig,
+  type FrontxAuthProviderOptions,
+  type AuthPluginConfig,
+} from './auth';
 export { mock, type MockPluginConfig } from './mock';
 export {
   microfrontends,

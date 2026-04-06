@@ -30,16 +30,20 @@ node scripts/manual-auth-tests/abort.mjs
 - `POST /login` -> sets `Set-Cookie: session=...` and returns `csrfToken` (if you enforce CSRF)
 - `GET /protected` -> requires cookie (and optionally CSRF header)
 
-2. In your app, configure auth plugin:
+2. In your app, configure auth plugin using `frontxAuthProvider`:
 
 ```ts
-use(auth({
-  provider,
-  hai3Api: {
+import { createHAI3, auth, frontxAuthProvider } from '@cyberfabric/framework';
+
+const provider = frontxAuthProvider(
+  { login, logout, getSession, checkAuth },
+  {
     allowedCookieOrigins: ['http://localhost:4010'],
     csrfHeaderName: 'x-csrf-token',
   },
-}))
+);
+
+createHAI3().use(auth({ provider })).build();
 ```
 
 3. Ensure `provider.getSession()` returns `{ kind: 'cookie', csrfToken }`.
@@ -72,7 +76,6 @@ npm run build:packages:framework
 ```json
 {
   "dependencies": {
-    "@cyberfabric/auth": "file:/path/to/frontx/packages/auth",
     "@cyberfabric/api": "file:/path/to/frontx/packages/api",
     "@cyberfabric/framework": "file:/path/to/frontx/packages/framework"
   }
@@ -91,7 +94,6 @@ If you use pnpm, prefer `link:` for symlinks:
 ```json
 {
   "dependencies": {
-    "@cyberfabric/auth": "link:/path/to/frontx/packages/auth",
     "@cyberfabric/api": "link:/path/to/frontx/packages/api",
     "@cyberfabric/framework": "link:/path/to/frontx/packages/framework"
   }
@@ -104,7 +106,6 @@ If you use pnpm, prefer `link:` for symlinks:
 2. Pack tarballs:
 
 ```bash
-cd /path/to/frontx/packages/auth && npm pack
 cd /path/to/frontx/packages/api && npm pack
 cd /path/to/frontx/packages/framework && npm pack
 ```
@@ -113,7 +114,6 @@ cd /path/to/frontx/packages/framework && npm pack
 
 ```bash
 cd /path/to/consumer-app
-npm i /path/to/frontx/packages/auth/cyberfabric-auth-*.tgz
 npm i /path/to/frontx/packages/api/cyberfabric-api-*.tgz
 npm i /path/to/frontx/packages/framework/cyberfabric-framework-*.tgz
 ```

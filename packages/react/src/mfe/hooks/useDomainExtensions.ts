@@ -83,7 +83,7 @@ export function useDomainExtensions(domainId: string): Extension[] {
   const getSnapshot = useCallback(() => {
     const extensions = registry.getExtensionsForDomain(domainId);
     // @cpt-begin:cpt-frontx-algo-react-bindings-stable-snapshots:p1:inst-compute-cache-key
-    const ids = extensions.map(e => e.id).join(',');
+    const ids = extensions.map((e: Extension) => e.id).join(',');
     // @cpt-end:cpt-frontx-algo-react-bindings-stable-snapshots:p1:inst-compute-cache-key
     // @cpt-begin:cpt-frontx-algo-react-bindings-stable-snapshots:p1:inst-return-cached
     // @cpt-begin:cpt-frontx-algo-react-bindings-stable-snapshots:p1:inst-update-cache
