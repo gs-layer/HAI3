@@ -7,7 +7,7 @@
 ## SCOPE
 - Package: `packages/auth/`
 - Layer: L1 SDK (zero @hai3 dependencies)
-- Purpose: headless authentication contract (types only)
+- Purpose: headless authentication contract (types only). Redux integration lives in @cyberfabric/framework (auth plugin).
 
 ## CRITICAL RULES
 - REQUIRED: Only TypeScript interfaces and type aliases. No runtime code.
@@ -46,6 +46,16 @@
 ## ACCESS CONTROL
 - Primary API: `canAccess(query)` with action + resource + optional record.
 - NOT roles-first: roles are metadata inside AuthPermissions, not the primary check.
+
+## REDUX STATE INTEGRATION
+- The auth plugin in @cyberfabric/framework projects AuthProvider state into Redux.
+- `AuthSessionMeta` — token-safe snapshot type (`kind` + optional `expiresAt`). Used when `redux.includeTokens` is `false` (default). Consumers who need tokens call `app.auth.getSession()`.
+- `isFullAuthSession(session)` — type guard distinguishing `AuthSession` from `AuthSessionMeta`. For bearer sessions, checks for the `token` field.
+- `RootStateWithAuth` — root state extension type providing `state['auth/session']` and `state['auth/permissions']`.
+- Known limitations:
+  - `subscribe()` is optional on AuthProvider. Without it, Redux auth state only updates on explicit actions (syncAuth, loginAction, etc.).
+  - Stale state is possible between provider mutations and the next sync.
+  - Permissions are fetched automatically on sync if `provider.getPermissions` exists, but can also be fetched independently via `fetchPermissions()`.
 
 ## STOP CONDITIONS
 - Adding runtime code (classes, functions, side effects).

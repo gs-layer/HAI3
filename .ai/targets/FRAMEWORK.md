@@ -46,7 +46,7 @@ const store = configureStore({ ... }); // FORBIDDEN
 | `routing()` | routeRegistry, URL sync | screensets |
 | `i18n()` | i18nRegistry, setLanguage | - |
 | `effects()` | Core effect coordination | - |
-| `auth()` | app.auth (AuthRuntime) | @cyberfabric/auth |
+| `auth()` | app.auth, auth/session slice, auth/permissions slice, auth actions | effects |
 
 ## RUNTIME EXTENSIONS
 - Plugins expose runtime APIs on `app` via `provides.app`.
@@ -80,6 +80,22 @@ declare module '../types' {
 - Cookie-session: sets `withCredentials: true` + optional CSRF header for relative URLs and allowlisted origins.
 - 401 refresh+retry: calls `provider.refresh()` on first 401, deduplicates concurrent refreshes, retries with new token.
 - Custom transport: pass `transport` option to override default `hai3ApiTransport()` binding.
+
+## AUTH REDUX INTEGRATION
+- Config: `auth({ provider, redux: { includeTokens: false } })` — `includeTokens` defaults to `false`.
+- Slices:
+  - `auth/session` — `{ status, session, error, lastSyncAt, capabilities }` (initial status: `'loading'`).
+  - `auth/permissions` — `{ permissions, loading, error }`.
+- Actions (pure functions emitting events):
+  - `syncAuth()` — force re-check auth state.
+  - `loginAction(input)` — trigger login flow.
+  - `logoutAction()` — trigger logout.
+  - `refreshAuth()` — refresh session then sync.
+  - `fetchPermissions()` — fetch permissions independently.
+- Module augmentation: `HAI3Actions` is extended from `auth.ts` via `declare module '../types'`, not statically in `types.ts`.
+- Redux is a **projection** of AuthProvider state — provider is the source of truth.
+- `useAuth()` for React components, `app.auth.getSession()` for imperative code.
+- Without `provider.subscribe()`, Redux auth state only updates on explicit actions.
 
 ## CUSTOM PLUGINS
 ```typescript

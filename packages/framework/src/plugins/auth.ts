@@ -21,6 +21,17 @@ import {
   type RestResponseContext,
 } from '@cyberfabric/api';
 import type { HAI3Plugin } from '../types';
+import { authSessionSlice } from '../slices/authSessionSlice';
+import { setAuthCapabilities } from '../slices/authSessionSlice';
+import { authPermissionsSlice } from '../slices/authPermissionsSlice';
+import { initAuthEffects } from '../effects/authEffects';
+import {
+  syncAuth,
+  loginAction,
+  logoutAction,
+  refreshAuth,
+  fetchPermissions,
+} from '../effects/authActions';
 
 export type AuthRuntime = {
   provider: AuthProvider;
@@ -64,6 +75,19 @@ export type AuthPluginConfig = {
    * Ignored when `transport` is provided.
    */
   hai3Api?: Hai3ApiAuthTransportConfig;
+  /**
+   * Redux state sync options.
+   * Auth state is projected into Redux for reactive UI consumption.
+   */
+  redux?: {
+    /**
+     * Include tokens in Redux state.
+     * When false (default), session data in Redux contains only kind and expiresAt.
+     * Consumers who need the actual token should call `app.auth.getSession()`.
+     * @default false
+     */
+    includeTokens?: boolean;
+  };
 };
 
 function isSupportedAuthTransportMethod(
@@ -253,10 +277,15 @@ export function hai3ApiTransport(): AuthTransportBinder {
 export function auth(config: AuthPluginConfig): HAI3Plugin {
   const transport = config.transport ?? hai3ApiTransport();
   let binding: AuthTransportBinding | null = null;
+  let effectsCleanup: (() => void) | null = null;
+  const includeTokens = config.redux?.includeTokens ?? false;
 
   return {
     name: 'auth',
+    dependencies: ['effects'],
     provides: {
+      slices: [authSessionSlice, authPermissionsSlice],
+      actions: { syncAuth, loginAction, logoutAction, refreshAuth, fetchPermissions },
       app: {
         auth: {
           provider: config.provider,
@@ -281,8 +310,24 @@ export function auth(config: AuthPluginConfig): HAI3Plugin {
         addRestPlugin: (plugin) => app.apiRegistry.plugins.add(RestProtocol, plugin),
         removeRestPlugin: (pluginClass) => app.apiRegistry.plugins.remove(RestProtocol, pluginClass),
       });
+
+      // Initialize auth effects with closure over provider and config
+      effectsCleanup = initAuthEffects(
+        app.store.dispatch,
+        config.provider,
+        includeTokens,
+      );
+
+      // Set capabilities (static, once)
+      app.store.dispatch(setAuthCapabilities(config.provider.capabilities ?? null));
+
+      // Trigger initial auth state sync
+      syncAuth();
     },
     onDestroy(_app) {
+      effectsCleanup?.();
+      effectsCleanup = null;
+
       binding?.destroy();
       binding = null;
       const providerDestroyResult = config.provider.destroy?.();
@@ -296,5 +341,13 @@ export function auth(config: AuthPluginConfig): HAI3Plugin {
 declare module '../types' {
   interface HAI3AppRuntimeExtensions {
     auth?: AuthRuntime;
+  }
+
+  interface HAI3Actions {
+    syncAuth: () => void;
+    loginAction: (input: AuthLoginInput) => void;
+    logoutAction: () => void;
+    refreshAuth: () => void;
+    fetchPermissions: () => void;
   }
 }

@@ -19,11 +19,19 @@
 - Type safety via module augmentation on `RootState`.
 - One store instance via `createStore()` singleton.
 
+## FRAMEWORK-LEVEL SLICES
+- `layout/*` — layout domain slices (header, footer, menu, sidebar, screen, popup, overlay).
+- `app/*` — application-level slices.
+- `mock` — mock mode control.
+- `auth/session` — auth session state (`{ status, session, error, lastSyncAt, capabilities }`).
+- `auth/permissions` — RBAC permissions (`{ permissions, loading, error }`).
+
 ## SLICE NAMING CONVENTION
 - REQUIRED: Use template literal with screenset ID: `${SCREENSET_ID}/domain`.
 - REQUIRED: Slice `.name` must match the state key exactly.
 - FORBIDDEN: Hardcoded string slice names.
 - FORBIDDEN: Global/shared slices outside layout domains.
+- Framework-level prefixes: `layout/`, `app/`, `mock`, `auth/`.
 
 ## SLICE REGISTRATION
 ```typescript

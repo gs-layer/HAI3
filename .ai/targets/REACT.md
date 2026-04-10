@@ -49,6 +49,7 @@ const app = createHAI3().use(screensets()).build();
 | `useScreenTranslations()` | Load screen translations | `{ isLoaded, error }` |
 | `useNavigation()` | Navigation utilities | `{ navigateToScreen, currentScreen }` |
 | `useTheme()` | Theme utilities | `{ currentTheme, themes, setTheme }` |
+| `useAuth()` | Auth state & actions | `{ status, isAuthenticated, session, permissions, sync, login, logout, refresh, fetchPermissions }` |
 
 ## SCREEN TRANSLATIONS
 ```tsx
@@ -74,6 +75,18 @@ function HomeScreen() {
 // REQUIRED: Export default for lazy loading
 export default HomeScreen;
 ```
+
+## AUTH HOOK
+```tsx
+const { isAuthenticated, status, permissions, login, logout } = useAuth();
+
+if (!isAuthenticated) {
+  return <LoginButton onClick={() => login({ type: 'oauth', payload: {} })} />;
+}
+return <UserMenu onLogout={logout} roles={permissions?.roles} />;
+```
+- Safe to use when auth plugin is not registered (returns unauthenticated defaults).
+- Redux is a projection of AuthProvider state; use `app.auth.getSession()` for imperative token access.
 
 ## STOP CONDITIONS
 - Using hooks outside HAI3Provider.

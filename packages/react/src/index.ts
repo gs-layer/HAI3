@@ -27,7 +27,9 @@ export {
   useScreenTranslations,
   useFormatters,
   useTheme,
+  useAuth,
 } from './hooks';
+export type { UseAuthReturn } from './hooks';
 
 // ============================================================================
 // MFE Context and Hooks
