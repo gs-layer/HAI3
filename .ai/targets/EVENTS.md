@@ -33,6 +33,20 @@
 - UICORE format: "uicore/domainId/eventName".
 - Actions use imperative names; events use past-tense names.
 
+## FRAMEWORK-LEVEL EVENTS
+- Framework plugins emit events with the `domain/subdomain/eventName` naming pattern.
+- Auth session events:
+  - `auth/session/state-changed` — from provider `subscribe()` or after operations.
+  - `auth/session/sync-requested` — imperative sync trigger.
+  - `auth/session/login-requested` — login trigger.
+  - `auth/session/logout-requested` — logout trigger.
+  - `auth/session/refresh-requested` — refresh trigger.
+- Auth permissions events:
+  - `auth/permissions/fetch-requested` — permissions fetch.
+  - `auth/permissions/changed` — permissions changed.
+- Mock events use `mock/` prefix (e.g., `mock/mode-changed`).
+- MFE-internal events use `mfe/` prefix (see MFE EVENT NAMING).
+
 ## DOMAIN FILE STRUCTURE
 - REQUIRED: Split events into domain files (one file per domain).
 - REQUIRED: Each domain file defines local DOMAIN_ID.

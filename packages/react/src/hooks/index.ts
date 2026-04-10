@@ -8,3 +8,5 @@ export { useTranslation } from './useTranslation';
 export { useScreenTranslations } from './useScreenTranslations';
 export { useFormatters } from './useFormatters';
 export { useTheme } from './useTheme';
+export { useAuth } from './useAuth';
+export type { UseAuthReturn } from './useAuth';

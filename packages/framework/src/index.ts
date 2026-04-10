@@ -322,6 +322,52 @@ export type {
 // Mock state type
 export type { MockState } from './slices/mockSlice';
 
+// Auth slices (provided by auth plugin)
+export {
+  authSessionSlice,
+  authSessionActions,
+  authSessionReducer,
+  setAuthSessionState,
+  setAuthLoading,
+  setAuthError,
+  setAuthCapabilities,
+  authPermissionsSlice,
+  authPermissionsActions,
+  authPermissionsReducer,
+  setPermissions,
+  setPermissionsLoading,
+  setPermissionsError,
+  clearPermissions,
+} from './slices';
+
+// Auth state types
+export type {
+  AuthSessionMeta,
+  AuthSessionSliceState,
+  AuthPermissionsSliceState,
+  RootStateWithAuth,
+} from './authTypes';
+export { isFullAuthSession } from './authTypes';
+
+// Auth effects and events
+export {
+  initAuthEffects,
+  AuthEvents,
+  toSessionOrMeta,
+} from './effects/authEffects';
+export type {
+  AuthStateChangedPayload,
+  AuthLoginRequestedPayload,
+  AuthPermissionsChangedPayload,
+} from './effects/authEffects';
+export {
+  syncAuth,
+  loginAction,
+  logoutAction,
+  refreshAuth,
+  fetchPermissions,
+} from './effects/authActions';
+
 // Tenant effects and events
 export {
   initTenantEffects,

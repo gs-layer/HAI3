@@ -79,6 +79,22 @@ import mockReducer, {
   mockActions,
   setMockEnabled,
 } from './mockSlice';
+import authSessionReducer, {
+  authSessionSlice,
+  authSessionActions,
+  setAuthSessionState,
+  setAuthLoading,
+  setAuthError,
+  setAuthCapabilities,
+} from './authSessionSlice';
+import authPermissionsReducer, {
+  authPermissionsSlice,
+  authPermissionsActions,
+  setPermissions,
+  setPermissionsLoading,
+  setPermissionsError,
+  clearPermissions,
+} from './authPermissionsSlice';
 
 // ============================================================================
 // Constants
@@ -187,6 +203,24 @@ export {
   mockReducer,
   // Individual actions - mock
   setMockEnabled,
+  // Auth session slice (provided by auth plugin)
+  authSessionSlice,
+  authSessionActions,
+  authSessionReducer,
+  // Individual actions - auth session
+  setAuthSessionState,
+  setAuthLoading,
+  setAuthError,
+  setAuthCapabilities,
+  // Auth permissions slice (provided by auth plugin)
+  authPermissionsSlice,
+  authPermissionsActions,
+  authPermissionsReducer,
+  // Individual actions - auth permissions
+  setPermissions,
+  setPermissionsLoading,
+  setPermissionsError,
+  clearPermissions,
 };
 
 // Type exports

@@ -243,6 +243,25 @@ function ActivePackageIndicator() {
 }
 ```
 
+#### useAuth
+
+Access auth state and actions:
+
+```tsx
+import { useAuth } from '@cyberfabric/react';
+
+function AuthExample() {
+  const { isAuthenticated, status, permissions, login, logout } = useAuth();
+
+  if (!isAuthenticated) {
+    return <button onClick={() => login({ type: 'oauth', payload: {} })}>Login</button>;
+  }
+  return <button onClick={logout}>Logout</button>;
+}
+```
+
+Safe to use when auth plugin is not registered (returns unauthenticated defaults). Redux is a projection of AuthProvider state; use `app.auth.getSession()` for imperative token access.
+
 ### MFE Components
 
 #### MfeProvider
@@ -341,6 +360,7 @@ This allows users to import everything from `@cyberfabric/react` without needing
 - `useDomainExtensions` - Subscribe to domain extensions
 - `useRegisteredPackages` - Subscribe to registered GTS packages
 - `useActivePackage` - Subscribe to active GTS package
+- `useAuth` - Auth state and actions
 
 ### Context
 - `HAI3Context` - React context (for advanced use)

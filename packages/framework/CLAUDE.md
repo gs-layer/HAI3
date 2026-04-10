@@ -57,6 +57,7 @@ const headlessApp = createHAI3()
 | `i18n()` | i18nRegistry, setLanguage action | - |
 | `effects()` | Core effect coordination | - |
 | `mock()` | mockSlice, toggleMockMode action | effects |
+| `auth()` | app.auth, auth/session slice, auth/permissions slice, auth actions | effects |
 
 ### Mock Mode Control
 
@@ -85,6 +86,37 @@ const app = createHAI3()
 ```
 
 Services register mock plugins using `registerPlugin()` in their constructor. The framework automatically manages plugin activation based on mock mode state.
+
+### Auth Redux State
+
+The `auth()` plugin projects AuthProvider state into two Redux slices:
+
+- `auth/session` — `{ status, session, error, lastSyncAt, capabilities }` (initial status: `'loading'`)
+- `auth/permissions` — `{ permissions, loading, error }`
+
+Auth actions (pure functions emitting events):
+
+| Action | Purpose |
+|--------|---------|
+| `syncAuth()` | Force re-check auth state |
+| `loginAction(input)` | Trigger login flow |
+| `logoutAction()` | Trigger logout |
+| `refreshAuth()` | Refresh session then sync |
+| `fetchPermissions()` | Fetch permissions independently |
+
+Config: `auth({ provider, redux: { includeTokens: false } })` — when `includeTokens` is `false` (default), session data in Redux uses `AuthSessionMeta` (kind + expiresAt only). Use `app.auth.getSession()` for token access.
+
+```typescript
+import { createHAI3, effects, auth } from '@cyberfabric/framework';
+
+const app = createHAI3()
+  .use(effects())
+  .use(auth({ provider: myAuthProvider }))
+  .build();
+
+// Imperative: app.auth.getSession()
+// React: useAuth() hook from @cyberfabric/react
+```
 
 ### Built Application
 
@@ -296,7 +328,7 @@ const menu = useAppSelector((state: RootStateWithLayout) => state.layout.menu);
 - `presets` - Available presets (full, minimal, headless)
 
 ### Plugins
-- `screensets`, `themes`, `layout`, `microfrontends`, `i18n`, `effects`, `mock`
+- `screensets`, `themes`, `layout`, `microfrontends`, `i18n`, `effects`, `mock`, `auth`
 
 ### Registries
 - `createThemeRegistry` - Theme registry factory
